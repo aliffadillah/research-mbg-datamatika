@@ -61,9 +61,47 @@ BOX_COLORS = [
 ]
 
 
+def apply_exif_orientation(img: Image.Image) -> Image.Image:
+    """
+    Terapkan rotasi EXIF ke piksel gambar dan hapus metadata EXIF-nya.
+    Ini memastikan gambar yang disimpan sudah dalam orientasi yang benar,
+    tanpa tag EXIF yang bisa membuat browser memutar ulang.
+    """
+    try:
+        exif = img._getexif()  # type: ignore[attr-defined]
+    except Exception:
+        exif = None
+
+    if not exif:
+        return img
+
+    orientation = exif.get(274)  # tag 274 = Orientation
+    TRANSPOSE_MAP = {
+        2: Image.FLIP_LEFT_RIGHT,
+        3: Image.ROTATE_180,
+        4: Image.FLIP_TOP_BOTTOM,
+        5: Image.Transpose.TRANSPOSE,
+        6: Image.ROTATE_270,
+        7: Image.Transpose.TRANSVERSE,
+        8: Image.ROTATE_90,
+    }
+    op = TRANSPOSE_MAP.get(orientation)
+    if op is not None:
+        img = img.transpose(op)
+    return img
+
+
 def draw_overlay(image_bytes: bytes, detections: list) -> str:
-    """Gambar bounding box di atas gambar, return base64 JPEG."""
-    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    """
+    Gambar bounding box di atas gambar, return base64 JPEG.
+    EXIF orientation diterapkan ke piksel lebih dulu agar orientasi gambar
+    dan posisi bounding box selalu konsisten.
+    """
+    raw = Image.open(io.BytesIO(image_bytes))
+
+    # Terapkan EXIF orientation ke piksel, lalu convert ke RGB (buang EXIF)
+    img = apply_exif_orientation(raw).convert("RGB")
+
     draw = ImageDraw.Draw(img)
     w, h = img.size
 
@@ -92,6 +130,7 @@ def draw_overlay(image_bytes: bytes, detections: list) -> str:
         draw.text((lx + 5, ly + 3), label, fill=(255, 255, 255), font=font)
 
     buf = io.BytesIO()
+    # Simpan tanpa EXIF agar browser tidak memutar ulang
     img.save(buf, format="JPEG", quality=92)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
@@ -157,8 +196,10 @@ def detect():
     imgsz  = int(request.form.get("imgsz", "640"))
 
     image_bytes = file.read()
-    img = Image.open(io.BytesIO(image_bytes))
-    img_w, img_h = img.size
+    raw_img = Image.open(io.BytesIO(image_bytes))
+    # Dimensi setelah EXIF rotation = dimensi yang akan tampil di browser
+    oriented_img = apply_exif_orientation(raw_img)
+    img_w, img_h = oriented_img.size
     img_area = img_w * img_h or 1
 
     log.info(f"Received: {file.filename} ({img_w}x{img_h}, {len(image_bytes)/1024:.0f} KB)")

@@ -63,9 +63,9 @@ export default function Detection() {
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [preview, setPreview] = useState(null)     // local URL for preview before upload
+  const [preview, setPreview] = useState(null)
   const [dragOver, setDragOver] = useState(false)
-  const [history, setHistory] = useState([])       // last 4 uploads
+  const [history, setHistory] = useState([])
   const fileInputRef = useRef(null)
 
   // ── Core detect function ────────────────────────────────────────
@@ -84,14 +84,12 @@ export default function Detection() {
     formData.append('imgsz', '640')
 
     try {
-      // Step 1: Python — kirim gambar ke model Ultralytics
       const modelRes = await fetch('/api/detect', { method: 'POST', body: formData })
       const modelData = await modelRes.json()
       if (!modelRes.ok) throw new Error(modelData.error || `Model error ${modelRes.status}`)
 
       const rawDetections = modelData.detections ?? []
 
-      // Step 2: Node.js — ambil data gizi dari Supabase untuk setiap item
       const enriched = await Promise.all(
         rawDetections.map(async (det) => {
           try {
@@ -122,7 +120,6 @@ export default function Detection() {
         })
       )
 
-      // Step 3: Hitung total nutrisi
       const totals = enriched.reduce(
         (acc, d) => ({
           calories: round1(acc.calories + (d.nutrition.calories ?? 0)),
@@ -134,7 +131,6 @@ export default function Detection() {
         { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
       )
 
-      // Step 4: MBG compliance
       const targets = MBG_TARGETS[portion]
       const nutrients = {}
       let allMet = true
@@ -171,7 +167,7 @@ export default function Detection() {
   const onFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) runDetect(file)
-    e.target.value = ''   // reset so same file can be re-uploaded
+    e.target.value = ''
   }
 
   const onDrop = (e) => {
@@ -190,6 +186,14 @@ export default function Detection() {
   const onRerun = () => {
     if (history[0]) runDetect(history[0].file || null)
     else fileInputRef.current?.click()
+  }
+
+  // Reset ke state awal untuk coba foto lain
+  const onNewPhoto = () => {
+    setStatus('idle')
+    setResult(null)
+    setPreview(null)
+    setErrorMsg('')
   }
 
   // ── Derived UI data ─────────────────────────────────────────────
@@ -211,249 +215,249 @@ export default function Detection() {
   ]
 
   // ════════════════════════════════════════════════════════════════
+  const hasResult = status === 'success' && result
+
   return (
-    <div className="det-content">
+    <div className={`det-content ${hasResult ? 'det-has-result' : 'det-no-result'}`}>
 
-      {/* ── LEFT: UPLOAD PANEL ─────────────────────────────────── */}
-      <div className="card det-left">
-        <h3>Upload Food Tray Image</h3>
-        <div className="sub">Drag-drop a photo, paste from clipboard, or choose from device</div>
+      {/* Hidden file input — selalu tersedia */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        style={{ display: 'none' }}
+        onChange={onFileChange}
+      />
 
-        {/* Drop zone */}
-        <div
-          className={`dz ${dragOver ? 'dz-over' : ''} ${status === 'loading' ? 'dz-loading' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-          onClick={() => status !== 'loading' && fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic"
-            style={{ display: 'none' }}
-            onChange={onFileChange}
-          />
+      {/* ── UPLOAD PANEL — hanya tampil saat belum ada hasil ─────── */}
+      {!hasResult && (
+        <div className="card det-upload-center">
+          <h3>Upload Food Tray Image</h3>
+          <div className="sub">Drag-drop a photo, paste from clipboard, or choose from device</div>
 
-          {status === 'loading' ? (
-            <div className="dz-loading-inner">
-              <Loader2 size={36} className="spin" style={{ color: 'var(--primary)', marginBottom: 12 }} />
-              <div style={{ fontWeight: 600, fontSize: 14 }}>Running RT-DETR inference…</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                Sending to Ultralytics Cloud Run
+          {/* Drop zone */}
+          <div
+            className={`dz ${dragOver ? 'dz-over' : ''} ${status === 'loading' ? 'dz-loading' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            onClick={() => status !== 'loading' && fileInputRef.current?.click()}
+          >
+            {status === 'loading' ? (
+              <div className="dz-loading-inner">
+                <Loader2 size={36} className="spin" style={{ color: 'var(--primary)', marginBottom: 12 }} />
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Running RT-DETR inference…</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                  Sending to Ultralytics Cloud Run
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <div className="dz-ic"><Upload size={28} /></div>
-              <h4>Drop your food tray image here</h4>
-              <p>PNG, JPG, HEIC up to 10MB · Indonesian school meal trays only</p>
-              <div className="dz-actions">
-                <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}>
-                  Choose file
+            ) : (
+              <>
+                <div className="dz-ic"><Upload size={28} /></div>
+                <h4>Drop your food tray image here</h4>
+                <p>PNG, JPG, HEIC up to 10MB · Indonesian school meal trays only</p>
+                <div className="dz-actions">
+                  <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}>
+                    Choose file
+                  </button>
+                  <button className="btn btn-outline btn-sm" onClick={(e) => e.stopPropagation()}>
+                    <Camera size={14} /> Use camera
+                  </button>
+                </div>
+                <div className="dz-or">or</div>
+                <button className="btn btn-ghost btn-sm" onClick={(e) => e.stopPropagation()}>
+                  Paste from clipboard
                 </button>
-                <button className="btn btn-outline btn-sm" onClick={(e) => e.stopPropagation()}>
-                  <Camera size={14} /> Use camera
-                </button>
+              </>
+            )}
+          </div>
+
+          {/* Error banner */}
+          {status === 'error' && (
+            <div className="det-error">
+              <AlertCircle size={16} />
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>Detection failed</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{errorMsg}</div>
               </div>
-              <div className="dz-or">or</div>
-              <button className="btn btn-ghost btn-sm" onClick={(e) => e.stopPropagation()}>
-                Paste from clipboard
+              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { setStatus('idle'); setErrorMsg('') }}>
+                Dismiss
               </button>
-            </>
-          )}
-        </div>
-
-        {/* Error banner */}
-        {status === 'error' && (
-          <div className="det-error">
-            <AlertCircle size={16} />
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: 2 }}>Detection failed</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{errorMsg}</div>
             </div>
-            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { setStatus('idle'); setErrorMsg('') }}>
-              Dismiss
+          )}
+
+          {/* Portion toggle */}
+          <h3 style={{ marginTop: 20 }}>Portion size</h3>
+          <div className="sub">Select MBG portion category for accurate nutrition scaling</div>
+          <div className="portion-toggle">
+            <button className={portion === 'besar' ? 'on' : ''} onClick={() => setPortion('besar')}>
+              Porsi Besar<span className="portion-meta">SMP / SMA · 750–950 kcal</span>
+            </button>
+            <button className={portion === 'kecil' ? 'on' : ''} onClick={() => setPortion('kecil')}>
+              Porsi Kecil<span className="portion-meta">SD · 500–700 kcal</span>
             </button>
           </div>
-        )}
-
-        {/* Portion toggle */}
-        <h3 style={{ marginTop: 20 }}>Portion size</h3>
-        <div className="sub">Select MBG portion category for accurate nutrition scaling</div>
-        <div className="portion-toggle">
-          <button className={portion === 'besar' ? 'on' : ''} onClick={() => setPortion('besar')}>
-            Porsi Besar<span className="portion-meta">SMP / SMA · 750–950 kcal</span>
-          </button>
-          <button className={portion === 'kecil' ? 'on' : ''} onClick={() => setPortion('kecil')}>
-            Porsi Kecil<span className="portion-meta">SD · 500–700 kcal</span>
-          </button>
         </div>
-      </div>
+      )}
 
-      {/* ── RIGHT: RESULTS PANEL ───────────────────────────────── */}
-      <div className="card det-right">
-
-        {/* Empty / idle state */}
-        {status === 'idle' && (
-          <div className="det-empty">
-            <div className="det-empty-ic"><Upload size={32} /></div>
-            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>Awaiting image</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-              Upload a food tray photo to run RT-DETR detection and get instant nutrition analysis
-            </div>
-          </div>
-        )}
-
-        {/* Loading skeleton */}
-        {status === 'loading' && (
-          <div className="det-empty">
-            <Loader2 size={36} className="spin" style={{ color: 'var(--primary)', marginBottom: 16 }} />
-            <div style={{ fontWeight: 600, fontSize: 15 }}>Analysing image…</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-              RT-DETR model is detecting food items
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {status === 'success' && result && (
-          <>
-            {/* Header */}
-            <h3>
-              Detection Result{' '}
-              <span style={{ fontWeight: 500, fontSize: 12, color: 'var(--text-muted)' }}>
-                {imgMeta.filename} · {imgMeta.width}×{imgMeta.height} · just now
-              </span>
-            </h3>
-            <div className="sub">
-              RT-DETR detected <strong>{detections.length}</strong> food item{detections.length !== 1 ? 's' : ''} with average confidence{' '}
-              <strong>{(avgConf * 100).toFixed(1)}%</strong>
-            </div>
-
-            {/* Image with overlay */}
-            <div className="canvas-wrap">
-              <div className="scan-badge">
-                <i className="scan-dot" />
-                Inference complete · {infMs} ms
+      {/* ── DETECTION RESULT (kiri saat ada hasil) ──────────────── */}
+      {hasResult && (
+        <div className="card det-result-left">
+          {/* Header row dengan tombol Foto Lain */}
+          <div className="det-result-header">
+            <div>
+              <h3 style={{ margin: 0 }}>
+                Detection Result{' '}
+              </h3>
+              <div className="sub" style={{ margin: '2px 0 0' }}>
+                RT-DETR detected <strong>{detections.length}</strong> food item{detections.length !== 1 ? 's' : ''} with avg confidence{' '}
+                <strong>{(avgConf * 100).toFixed(1)}%</strong>
               </div>
-              <div className="canvas-meta">
-                <span className="chip-dark">{imgMeta.width} × {imgMeta.height}</span>
-                <span className="chip-dark">RT-DETR v2.1</span>
-              </div>
+            </div>
+            <button className="btn btn-new-photo" onClick={onNewPhoto}>
+              <Upload size={14} />
+              Analisis Foto Lain
+            </button>
+          </div>
 
-              {overlayB64 ? (
-                <img
-                  src={`data:image/jpeg;base64,${overlayB64}`}
-                  alt="Detection overlay"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
-                />
-              ) : preview ? (
-                <img
-                  src={preview}
-                  alt="Uploaded food tray"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
-                />
-              ) : (
-                /* Fallback decorative shapes */
-                <>
-                  <div className="fd fd-rice" /><div className="fd fd-ayam" />
-                  <div className="fd fd-sayur" /><div className="fd fd-tempe" />
-                </>
-              )}
+          {/* Image with overlay */}
+          <div className="canvas-wrap" style={{ marginTop: 12 }}>
+            <div className="scan-badge">
+              <i className="scan-dot" />
+              Inference complete · {infMs} ms
+            </div>
+            <div className="canvas-meta">
+              <span className="chip-dark">{imgMeta.width} × {imgMeta.height}</span>
+              <span className="chip-dark">RT-DETR v2.1</span>
             </div>
 
-            {/* Detected items list */}
-            <div className="items-list">
-              {detections.map((item, i) => (
-                <div className="items-row" key={i}>
-                  <span className="items-dot" style={{ background: item.color }} />
-                  <div className="items-nm">
-                    {item.class_name}
-                    <span className="items-grams"> · {item.portion_grams}g</span>
-                  </div>
-                  <div className="cbar" style={{ minWidth: 180 }}>
-                    <div className="track">
-                      <div className="fill" style={{ width: `${(item.confidence * 100).toFixed(0)}%`, background: `linear-gradient(90deg,${item.color},${item.color})` }} />
-                    </div>
-                    <span className="val" style={{ color: item.color }}>
-                      {(item.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
+            {overlayB64 ? (
+              <img
+                src={`data:image/jpeg;base64,${overlayB64}`}
+                alt="Detection overlay"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12, imageOrientation: 'none' }}
+              />
+            ) : preview ? (
+              <img
+                src={preview}
+                alt="Uploaded food tray"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12, imageOrientation: 'none' }}
+              />
+            ) : (
+              <>
+                <div className="fd fd-rice" /><div className="fd fd-ayam" />
+                <div className="fd fd-sayur" /><div className="fd fd-tempe" />
+              </>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="det-actions">
+            <button className="btn btn-primary btn-sm"><Save size={14} />Save Result</button>
+            <button className="btn btn-outline btn-sm"><Download size={14} />Download PDF</button>
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={onRerun}>
+              <RefreshCw size={14} />Re-run
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── NUTRITION INFO (kanan saat ada hasil) ─────────────────── */}
+      {hasResult && (
+        <div className="card det-nutrition-right">
+          {/* Detected items list — di atas Nutrition Summary */}
+          <div className="items-list items-list-top">
+            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Detected Items</h4>
+            {detections.map((item, i) => (
+              <div className="items-row" key={i}>
+                <span className="items-dot" style={{ background: item.color }} />
+                <div className="items-nm">
+                  {item.class_name}
+                  <span className="items-grams"> · {item.portion_grams}g</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Nutrition cards */}
-            <div className="nut-row">
-              {nutCards.map((n) => {
-                const icon = NUT_ICONS[n.label] ?? { emoji: '●', color: 'var(--grad-brand)' }
-                const delta = pctDelta(n.value, targets[n.key])
-                const pct = targets[n.key] ? Math.min(120, (n.value / targets[n.key]) * 100) : 0
-                return (
-                  <div className="nut-card" key={n.key}>
-                    <div className="nut-head">
-                      <div className="nut-ic" style={{ background: icon.color }}>{icon.emoji}</div>
-                      <span className={`nut-delta${delta.warn ? ' warn' : delta.neutral ? ' neutral' : ''}`}>
-                        {delta.text}
-                      </span>
-                    </div>
-                    <div className="nut-val">
-                      {fmtNum(n.value)}<span className="nut-unit">{n.unit}</span>
-                    </div>
-                    <div className="nut-lbl">{n.label}</div>
-                    <div className="nut-ring"><i style={{ width: `${pct}%` }} /></div>
+                <div className="cbar" style={{ minWidth: 120 }}>
+                  <div className="track">
+                    <div className="fill" style={{ width: `${(item.confidence * 100).toFixed(0)}%`, background: `linear-gradient(90deg,${item.color},${item.color})` }} />
                   </div>
-                )
-              })}
-            </div>
-
-            {/* MBG Compliance */}
-            <div className="mbg-section">
-              <h4>
-                MBG Compliance · {compliance.portion_label ?? `Porsi ${portion}`}
-                <span className={`target-pill ${compliance.compliant ? '' : 'pill-warning'}`}>
-                  {compliance.compliant
-                    ? <><CheckCircle2 size={11} /> Compliant</>
-                    : <><XCircle size={11} /> Below target</>}
-                </span>
-              </h4>
-              {Object.entries(compliance.nutrients ?? {}).map(([key, nut]) => (
-                <div className="mbg-row" key={key}>
-                  <span className="mbg-nm">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
-                  <div className="mbg-track">
-                    <div
-                      className="mbg-fill"
-                      style={{
-                        width: `${Math.min(nut.percentage, 100)}%`,
-                        background: nut.percentage < 60
-                          ? 'linear-gradient(90deg,#f59e0b,#d97706)'
-                          : nut.percentage > 110
-                            ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                            : 'linear-gradient(90deg,#22c55e,#16a34a)',
-                      }}
-                    />
-                    <div className="mbg-target" style={{ left: '100%' }} />
-                  </div>
-                  <span className="mbg-val">
-                    {fmtNum(nut.actual)} / {nut.target} {key === 'calories' ? 'kcal' : 'g'}
+                  <span className="val" style={{ color: item.color }}>
+                    {(item.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
 
-            {/* Actions */}
-            <div className="det-actions">
-              <button className="btn btn-primary btn-sm"><Save size={14} />Save Result</button>
-              <button className="btn btn-outline btn-sm"><Download size={14} />Download PDF</button>
-              <button className="btn btn-outline btn-sm"><BarChart3 size={14} />Compare</button>
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={onRerun}>
-                <RefreshCw size={14} />Re-run
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+          <div className="items-nutrition-divider" />
+
+          <h3>Nutrition Summary</h3>
+          <div className="sub">Estimated total nutrition for this meal tray</div>
+
+          {/* Nutrition cards */}
+          <div className="nut-row nut-row-col">
+            {nutCards.map((n) => {
+              const delta = pctDelta(n.value, targets[n.key])
+              const pct = targets[n.key] ? Math.min(120, (n.value / targets[n.key]) * 100) : 0
+              return (
+                <div className="nut-card nut-card-row" key={n.key}>
+                  <div className="nut-head">
+                    <div>
+                      <div className="nut-lbl" style={{ margin: 0 }}>{n.label}</div>
+                      <div className="nut-val" style={{ fontSize: 18 }}>
+                        {fmtNum(n.value)}<span className="nut-unit">{n.unit}</span>
+                      </div>
+                    </div>
+                    <span className={`nut-delta${delta.warn ? ' warn' : delta.neutral ? ' neutral' : ''}`}>
+                      {delta.text}
+                    </span>
+                  </div>
+                  <div className="nut-ring" style={{ marginTop: 8 }}><i style={{ width: `${pct}%` }} /></div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* MBG Compliance */}
+          <div className="mbg-section">
+            <h4>
+              MBG Compliance · {compliance.portion_label ?? `Porsi ${portion}`}
+              <span className={`target-pill ${compliance.compliant ? '' : 'pill-warning'}`}>
+                {compliance.compliant
+                  ? <><CheckCircle2 size={11} /> Compliant</>
+                  : <><XCircle size={11} /> Below target</>}
+              </span>
+            </h4>
+            {Object.entries(compliance.nutrients ?? {}).map(([key, nut]) => (
+              <div className="mbg-row" key={key}>
+                <span className="mbg-nm">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
+                <div className="mbg-track">
+                  <div
+                    className="mbg-fill"
+                    style={{
+                      width: `${Math.min(nut.percentage, 100)}%`,
+                      background: nut.percentage < 60
+                        ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                        : nut.percentage > 110
+                          ? 'linear-gradient(90deg,#ef4444,#dc2626)'
+                          : 'linear-gradient(90deg,#22c55e,#16a34a)',
+                    }}
+                  />
+                  <div className="mbg-target" style={{ left: '100%' }} />
+                </div>
+                <span className="mbg-val">
+                  {fmtNum(nut.actual)} / {nut.target} {key === 'calories' ? 'kcal' : 'g'}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Compare button */}
+          <div className="det-actions" style={{ marginTop: 14 }}>
+            <button className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
+              <BarChart3 size={14} />Compare with targets
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

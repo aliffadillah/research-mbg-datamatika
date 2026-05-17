@@ -1,7 +1,31 @@
 /* ===== DETECTION PAGE ===== */
-.det-content{padding:24px 28px;display:grid;grid-template-columns:5fr 7fr;gap:20px;align-items:start}
-.det-left{grid-column:1;grid-row:1;align-self:start}
-.det-right{grid-column:2;grid-row:1;align-self:start}
+
+/* ── Idle / loading: upload card centred ────────────────────────── */
+.det-content{padding:24px 28px;display:grid;gap:20px;align-items:start}
+
+.det-no-result{
+  grid-template-columns:1fr;
+  max-width:620px;
+  margin:0 auto;
+  width:100%;
+}
+.det-upload-center{width:100%}
+
+/* ── Has result: 2-col grid  detection | nutrition ─────────────── */
+.det-has-result{
+  grid-template-columns:minmax(0,5fr) minmax(0,4fr);
+}
+.det-result-left{align-self:start}
+.det-nutrition-right{align-self:start}
+
+/* Header baris dalam Detection Result */
+.det-result-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
+
+/* Tombol Analisis Foto Lain */
+.btn-new-photo{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--primary);background:var(--emerald-50);border:1px solid var(--emerald-100);cursor:pointer;white-space:nowrap;transition:all .18s}
+.btn-new-photo:hover{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 12px -2px rgba(22,163,74,0.30)}
+
+/* Pipe spans full width */
 .det-pipe{grid-column:1/-1}
 
 /* Dropzone */
@@ -45,8 +69,8 @@
 .recent-ck{position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px}
 
 /* Canvas */
-.canvas-wrap{position:relative;width:100%;aspect-ratio:1.4;border-radius:14px;background:linear-gradient(135deg,#fef3c7,#fde68a);overflow:hidden;box-shadow:inset 0 0 0 1px #fde68a}
-.canvas-wrap::before{content:"";position:absolute;inset:14px;border:2px dashed rgba(120,53,15,0.15);border-radius:18px}
+.canvas-wrap{position:relative;width:100%;border-radius:14px;background:#111;overflow:hidden;box-shadow:inset 0 0 0 1px #1e293b}
+.canvas-wrap img{display:block;width:100%;height:auto;image-orientation:none}
 .fd{position:absolute;border-radius:50%}
 .fd-rice{top:14%;left:8%;width:32%;height:55%;background:radial-gradient(circle at 35% 30%,#fefce8,#e7e5e4 70%);box-shadow:inset 0 -10px 20px rgba(0,0,0,0.08)}
 .fd-ayam{top:18%;right:8%;width:28%;height:42%;border-radius:50% 50% 45% 45%;background:radial-gradient(circle at 35% 30%,#fde68a,#92400e);box-shadow:inset 0 -8px 16px rgba(0,0,0,0.18)}
@@ -67,6 +91,8 @@
 
 /* Items list */
 .items-list{margin-top:14px}
+.items-list-top{margin-top:0}
+.items-nutrition-divider{height:1px;background:var(--border-light);margin:14px 0}
 .items-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-light);margin-bottom:6px;background:#fff}
 .items-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .items-nm{font-size:13px;font-weight:600;flex:1}
@@ -74,7 +100,12 @@
 
 /* Nutrition cards */
 .nut-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+/* Vertical stacked layout (used in right nutrition panel) */
+.nut-row-col{display:flex;flex-direction:column;gap:8px;grid-template-columns:unset}
 .nut-card{padding:14px;border-radius:12px;border:1px solid var(--border-light);background:linear-gradient(135deg,#ffffff,var(--slate-50))}
+/* Row-style card: icon + label/value left, delta right */
+.nut-card-row{padding:12px 14px}
+.nut-card-row .nut-head{margin-bottom:0}
 .nut-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .nut-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700}
 .nut-delta{font-size:var(--font-xs);color:var(--primary);font-weight:700}
