@@ -1,20 +1,3 @@
-"""
-NutriVision MBG — Python Inference Server
-==========================================
-Pipeline deteksi 2 tahap:
-  1. API_OMPRENGAN  → deteksi food tray → crop gambar ke area tray + padding
-  2. API_MENU       → deteksi menu makanan di dalam crop tray
-
-Endpoints:
-  POST /api/detect   → full 2-stage pipeline → return detections + overlay
-  GET  /api/health   → health check
-
-Environment (dari ../.env):
-  API_MENU              → URL model deteksi menu (Ultralytics Cloud Run)
-  API_OMPRENGAN         → URL model deteksi food tray (Ultralytics Cloud Run)
-  API_KEY_ULTRALYTICS   → API key untuk header x-api-key
-"""
-
 import os
 import io
 import time
@@ -35,7 +18,6 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 API_MENU      = os.getenv("API_MENU", "").rstrip("/") + "/predict"
 API_OMPRENGAN = os.getenv("API_OMPRENGAN", "").rstrip("/") + "/predict"
 API_KEY       = os.getenv("API_KEY_ULTRALYTICS")
-# API_KEY_OMPRENGAN opsional — jika tidak diset, gunakan API_KEY_ULTRALYTICS
 API_KEY_OMPRENGAN = os.getenv("API_KEY_OMPRENGAN") or API_KEY
 
 if not API_MENU or not API_KEY:
@@ -66,7 +48,7 @@ BOX_COLORS = [
 ]
 
 # ── Padding yang diberikan di sekeliling crop tray (persen) ───────
-TRAY_CROP_PADDING_PCT = 0.04   # 4% dari dimensi masing-masing sisi
+TRAY_CROP_PADDING_PCT = 0.10   # 10% dari ukuran bbox tray di setiap sisi
 
 
 # ════════════════════════════════════════════════════════════════
