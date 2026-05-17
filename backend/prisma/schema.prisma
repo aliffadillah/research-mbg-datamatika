@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// ─── Nutrition table ──────────────────────────────────────────────────────────
+// Data gizi per makanan (per 100g) — sudah ada di Supabase
+model Nutrition {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  calories  Float?
+  protein   Float?
+  fat       Float?
+  carbs     Float?
+  fiber     Float?
+  category  String?
+  image_url String?
+
+  @@map("nutritions")
+}
+
+// ─── Menu table ───────────────────────────────────────────────────────────────
+// Menu MBG per kategori sekolah dengan porsi besar/kecil
+model Menu {
+  id            String  @id @default(cuid())
+  name          String
+  large_portion Json?   // { energi, protein, lemak, karbohidrat, serat }
+  small_portion Json?   // { energi, protein, lemak, karbohidrat, serat }
+
+  @@map("menus")
+}
+
+// ─── Detection History table ──────────────────────────────────────────────────
+// Hasil deteksi yang disimpan oleh pengguna
+model History {
+  id                String   @id @default(cuid())
+  user_id           String?
+  filename          String
+  portion           String   @default("besar")
+  detections        String   // JSON string: DetectionItem[]
+  nutrition_summary String   // JSON string: NutritionSummary
+  mbg_compliance    String   // JSON string: MBGCompliance
+  inference_ms      Int      @default(0)
+  overlay_image_url String?
+  created_at        DateTime @default(now())
+
+  @@map("histories")
+}
+
+// ─── Users table ─────────────────────────────────────────────────────────────
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  name       String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("users")
+}

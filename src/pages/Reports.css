@@ -1,0 +1,23 @@
+/* ===== REPORTS PAGE ===== */
+.rpt-content{padding:24px 28px;display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.rpt-content .page-head{grid-column:1/-1}
+
+/* KPIs */
+.rpt-kpi{grid-column:span 3;padding:20px}
+.rk-lbl{font-size:var(--font-xs);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:6px}
+.rk-val{font-size:28px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;margin-bottom:4px}
+.rk-delta{font-size:var(--font-xs);color:var(--primary);font-weight:600}
+
+/* Table */
+.rpt-table{grid-column:1/-1}
+.rpt-icon{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--emerald-50),#f0fdfa);border:1px solid var(--emerald-100);display:flex;align-items:center;justify-content:center;color:var(--primary);flex-shrink:0}
+.rpt-nm{font-weight:600;color:var(--text);font-size:13px}
+.rpt-id{font-size:var(--font-xs);color:var(--text-faint);font-family:'SF Mono',ui-monospace,monospace}
+
+.pill-rpt{display:inline-flex;align-items:center;padding:3px 9px;border-radius:var(--radius-full);font-size:var(--font-xs);font-weight:600}
+.pill-cyan{background:#ecfeff;color:#0e7490}
+.pill-violet{background:#f3e8ff;color:#6d28d9}
+.pill-amber{background:#fef3c7;color:#b45309}
+.pill-blue{background:#dbeafe;color:#1d4ed8}
+
+.rpt-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--border-light);font-size:12px;color:var(--text-muted)}

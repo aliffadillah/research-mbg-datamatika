@@ -1,0 +1,65 @@
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  height:var(--topbar-height);
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding:0 28px;
+}
+.tb-left{display:flex;flex-direction:column}
+.tb-crumb{
+  font-size:var(--font-xs);color:var(--text-faint);
+  font-weight:600;letter-spacing:0.04em;text-transform:uppercase;
+}
+.tb-title{
+  font-size:var(--font-xl);font-weight:700;
+  letter-spacing:-0.015em;
+  display:flex;align-items:center;gap:8px;
+}
+.live-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--primary);
+  box-shadow:0 0 0 4px rgba(22,163,74,0.20);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+.live-text{
+  font-size:var(--font-xs);color:var(--primary);
+  font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-search{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border:1px solid var(--border);
+  border-radius:var(--radius-md);background:#fff;
+  font-size:var(--font-base);color:var(--text-faint);
+  min-width:300px;cursor:pointer;
+  transition:border-color var(--transition-fast);
+}
+.tb-search:hover{border-color:var(--slate-300)}
+.kbd{
+  margin-left:auto;font-size:var(--font-xs);font-weight:600;
+  color:var(--text-muted);padding:2px 6px;
+  background:var(--slate-100);border-radius:5px;
+  font-family:'SF Mono',ui-monospace,monospace;
+}
+.tb-icon-btn{
+  position:relative;width:36px;height:36px;
+  border-radius:var(--radius-md);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-secondary);cursor:pointer;
+  transition:background var(--transition-fast);
+}
+.tb-icon-btn:hover{background:var(--slate-100)}
+.notif-dot{
+  position:absolute;top:8px;right:8px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--red-500);border:2px solid #fff;
+}
+.tb-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--grad-brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;cursor:pointer;
+}

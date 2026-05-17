@@ -1,0 +1,64 @@
+/* ===== PREDICTION PAGE ===== */
+.pred-content{padding:24px 28px;display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.pred-content .page-head{grid-column:1/-1}
+.pred-sel{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:13px;font-weight:600}
+
+/* Metrics */
+.pred-metric{grid-column:span 3;padding:18px}
+.pm-lbl{font-size:var(--font-xs);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:6px}
+.pm-val{font-size:30px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+.pm-u{font-size:13px;color:var(--text-muted);font-weight:600}
+.pm-delta{font-size:var(--font-xs);font-weight:700;margin-top:4px}
+.pm-bar{height:4px;background:var(--border-light);border-radius:2px;margin-top:12px;overflow:hidden}
+.pm-bar i{display:block;height:100%;border-radius:2px}
+.m1 .pm-bar i{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.m2 .pm-bar i{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.m3 .pm-bar i{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.m4 .pm-bar i{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+
+/* Forecast chart */
+.pred-forecast{grid-column:span 12;background:var(--grad-dark-alt) !important;color:#fff !important;border:none !important;overflow:hidden;position:relative}
+.pred-forecast::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 60% at 80% 20%,rgba(34,197,94,0.20),transparent 60%);pointer-events:none}
+.pred-forecast h3{color:#fff !important}
+.pred-forecast .sub{color:#94a3b8 !important}
+.pf-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.f-legend{display:flex;gap:14px;font-size:12px;color:#cbd5e1;margin-bottom:8px}
+.f-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.dashed-i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle;background:#0891b2;background-image:repeating-linear-gradient(90deg,#0891b2 0 4px,transparent 4px 8px)}
+.f-chart{height:300px;position:relative;margin-top:8px}
+.f-chart svg{width:100%;height:100%}
+.f-tooltip{position:absolute;left:62%;top:30%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.10);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);font-size:12px;min-width:170px}
+.ft-lbl{font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em}
+.ft-v{font-size:18px;font-weight:800;color:#bbf7d0;margin-top:4px}
+.ft-ci{font-size:var(--font-xs);color:#cbd5e1;margin-top:2px}
+
+/* Loss */
+.pred-loss{grid-column:span 6}
+.loss-chart{height:200px;margin-top:8px}
+.loss-chart svg{width:100%;height:100%}
+.loss-legend{display:flex;gap:14px;font-size:12px;margin-top:6px}
+.loss-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+
+/* Architecture */
+.pred-arch{grid-column:span 6}
+.arch-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--slate-50),var(--slate-100));border:1px solid var(--border-light)}
+.arch-node{flex:1;text-align:center;padding:12px 8px;border-radius:10px;background:#fff;border:1px solid var(--border);font-size:var(--font-xs);font-weight:700;color:var(--text-secondary)}
+.arch-top{display:block;font-size:10px;color:var(--text-faint);font-weight:600;margin-bottom:2px}
+.arch-node.arch-h{background:var(--grad-brand);color:#fff;border:none}
+.arch-node.arch-h .arch-top{color:#bbf7d0}
+.arch-arrow{color:var(--slate-300);font-weight:700;flex-shrink:0}
+.arch-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.arch-item{padding:8px;border-radius:8px;background:var(--slate-50);text-align:center}
+.arch-k{color:var(--text-faint);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.04em}
+.arch-v{color:var(--text);font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;margin-top:2px}
+
+/* Forecast Table */
+.pred-table{grid-column:span 12}
+.ft-dt{font-weight:600;color:var(--text)}
+.ci-bar{display:flex;align-items:center;gap:8px}
+.ci-track{flex:1;height:6px;background:var(--border-light);border-radius:3px;position:relative;min-width:120px}
+.ci-band{position:absolute;top:0;height:100%;background:linear-gradient(90deg,#bbf7d0,#16a34a);border-radius:3px;opacity:0.5}
+.ci-point{position:absolute;top:-3px;width:12px;height:12px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 1px 4px rgba(15,23,42,0.20)}
+.tag-up{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:var(--radius-full);font-size:var(--font-xs);font-weight:700;background:var(--emerald-50);color:var(--green-700)}
+.tag-down{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:var(--radius-full);font-size:var(--font-xs);font-weight:700;background:#fef2f2;color:var(--red-700)}
+.tag-flat{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:var(--radius-full);font-size:var(--font-xs);font-weight:700;background:var(--slate-100);color:var(--text-muted)}

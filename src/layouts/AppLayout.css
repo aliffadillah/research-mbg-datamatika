@@ -1,0 +1,11 @@
+.app-shell{
+  display:grid;
+  grid-template-columns:var(--sidebar-width) 1fr;
+  min-height:100vh;
+}
+.app-main{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  background:var(--bg);
+}
