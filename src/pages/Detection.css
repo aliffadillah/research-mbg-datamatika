@@ -97,7 +97,21 @@
 .items-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1px solid var(--border-light);margin-bottom:6px;background:#fff}
 .items-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .items-nm{font-size:13px;font-weight:600;flex:1}
-.items-grams{font-size:var(--font-xs);color:var(--text-muted);font-weight:500}
+
+/* Detected item card (chip layout) */
+.det-item-card{padding:10px 12px;border-radius:10px;border:1px solid var(--border-light);background:#fff;margin-bottom:6px}
+.det-item-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.det-item-name{font-size:13px;font-weight:600;flex:1;color:var(--text-primary)}
+.det-item-conf{font-size:12px;font-weight:700;flex-shrink:0}
+.det-item-chips{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding-left:18px}
+/* Base chip */
+.nut-chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600}
+.nut-chip-cal{background:#fff3e0;color:#e65100}
+.nut-chip-p{background:#e3f2fd;color:#1565c0}
+.nut-chip-k{background:#e8f5e9;color:#2e7d32}
+.nut-chip-l{background:#e0f7fa;color:#00695c}
+.nut-chip-f{background:#f3f4dc;color:#5d6326}
+.nut-chip-unit{font-size:11px;color:var(--text-muted);margin-left:2px}
 
 /* Nutrition cards */
 .nut-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}

@@ -100,25 +100,26 @@ export default function Detection() {
             const nutRes = await fetch(`/api/nutrition/lookup?name=${encodeURIComponent(det.class_name)}`)
             const nutData = await nutRes.json()
             const nut = nutData.nutrition ?? {}
-            const grams = estimateGrams(det.class_name, det.bbox_area_pct ?? 10)
-            const scale = grams / 100
+
             return {
               ...det,
-              portion_grams: grams,
               nutrition_found: nutData.found ?? false,
+              db_name: nut.name ?? det.class_name,   
               nutrition: {
-                calories: round1((nut.calories ?? 100) * scale),
-                protein: round1((nut.protein ?? 5) * scale),
-                carbs: round1((nut.carbs ?? 15) * scale),
-                fat: round1((nut.fat ?? 3) * scale),
-                fiber: round1((nut.fiber ?? 1) * scale),
+                calories: round1(nut.calories ?? 0),
+                protein:  round1(nut.protein  ?? 0),
+                carbs:    round1(nut.carbs    ?? 0),
+                fat:      round1(nut.fat      ?? 0),
+                fiber:    round1(nut.fiber    ?? 0),
               },
               category: nut.category ?? 'other',
             }
           } catch {
             return {
-              ...det, portion_grams: 80,
-              nutrition: { calories: 100, protein: 5, carbs: 15, fat: 3, fiber: 1 }, category: 'other'
+              ...det,
+              nutrition_found: false,
+              nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
+              category: 'other',
             }
           }
         })
@@ -381,24 +382,33 @@ export default function Detection() {
         <div className="card det-nutrition-right">
           {/* Detected items list — di atas Nutrition Summary */}
           <div className="items-list items-list-top">
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Detected Items</h4>
-            {detections.map((item, i) => (
-              <div className="items-row" key={i}>
-                <span className="items-dot" style={{ background: item.color }} />
-                <div className="items-nm">
-                  {item.class_name}
-                  <span className="items-grams"> · {item.portion_grams}g</span>
-                </div>
-                <div className="cbar" style={{ minWidth: 120 }}>
-                  <div className="track">
-                    <div className="fill" style={{ width: `${(item.confidence * 100).toFixed(0)}%`, background: `linear-gradient(90deg,${item.color},${item.color})` }} />
+            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+              Detected Items
+            </h4>
+            {detections.map((item, i) => {
+              const n = item.nutrition ?? {}
+              return (
+                <div className="det-item-card" key={i}>
+                  {/* Baris atas: dot + nama + confidence */}
+                  <div className="det-item-header">
+                    <span className="items-dot" style={{ background: item.color }} />
+                    <span className="det-item-name">{item.db_name || item.class_name}</span>
+                    <span className="det-item-conf" style={{ color: item.color }}>
+                      {(item.confidence * 100).toFixed(0)}%
+                    </span>
                   </div>
-                  <span className="val" style={{ color: item.color }}>
-                    {(item.confidence * 100).toFixed(0)}%
-                  </span>
+                  {/* Baris bawah: chip nutrisi */}
+                  <div className="det-item-chips">
+                    <span className="nut-chip nut-chip-cal">{n.calories ?? 0} kcal</span>
+                    <span className="nut-chip nut-chip-p">P {n.protein ?? 0}g</span>
+                    <span className="nut-chip nut-chip-k">K {n.carbs ?? 0}g</span>
+                    <span className="nut-chip nut-chip-l">L {n.fat ?? 0}g</span>
+                    <span className="nut-chip nut-chip-f">F {n.fiber ?? 0}g</span>
+                    <span className="nut-chip-unit">/ 100g</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="items-nutrition-divider" />

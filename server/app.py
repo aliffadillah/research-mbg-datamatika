@@ -48,7 +48,7 @@ BOX_COLORS = [
 ]
 
 # ── Padding yang diberikan di sekeliling crop tray (persen) ───────
-TRAY_CROP_PADDING_PCT = 0.10   # 10% dari ukuran bbox tray di setiap sisi
+TRAY_CROP_PADDING_PCT = 0.08   
 
 
 # ════════════════════════════════════════════════════════════════
