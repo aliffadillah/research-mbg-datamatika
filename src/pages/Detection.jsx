@@ -63,6 +63,7 @@ export default function Detection() {
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [errorCode, setErrorCode] = useState('')      // e.g. TRAY_NOT_FOUND
   const [preview, setPreview] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [history, setHistory] = useState([])
@@ -86,7 +87,10 @@ export default function Detection() {
     try {
       const modelRes = await fetch('/api/detect', { method: 'POST', body: formData })
       const modelData = await modelRes.json()
-      if (!modelRes.ok) throw new Error(modelData.error || `Model error ${modelRes.status}`)
+      if (!modelRes.ok) {
+        const code = modelData.error_code || ''
+        throw Object.assign(new Error(modelData.error || `Model error ${modelRes.status}`), { code })
+      }
 
       const rawDetections = modelData.detections ?? []
 
@@ -160,6 +164,7 @@ export default function Detection() {
     } catch (err) {
       setStatus('error')
       setErrorMsg(err.message)
+      setErrorCode(err.code || '')
     }
   }, [portion])
 
@@ -274,15 +279,24 @@ export default function Detection() {
 
           {/* Error banner */}
           {status === 'error' && (
-            <div className="det-error">
-              <AlertCircle size={16} />
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 2 }}>Detection failed</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{errorMsg}</div>
+            <div className={`det-error ${errorCode === 'TRAY_NOT_FOUND' ? 'det-error-tray' : ''}`}>
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                  {errorCode === 'TRAY_NOT_FOUND' ? 'Nampan tidak terdeteksi' : 'Detection failed'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>{errorMsg}</div>
+                {errorCode === 'TRAY_NOT_FOUND' && (
+                  <div style={{ fontSize: 11, marginTop: 6, color: 'var(--text-faint)', lineHeight: 1.6 }}>
+                    💡 Tips: pastikan nampan MBG terlihat penuh di foto, pencahayaan cukup, dan tidak terlalu jauh.
+                  </div>
+                )}
               </div>
-              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }} onClick={() => { setStatus('idle'); setErrorMsg('') }}>
-                Dismiss
+              <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto', flexShrink: 0 }}
+                onClick={() => { setStatus('idle'); setErrorMsg(''); setErrorCode('') }}>
+                Coba Lagi
               </button>
+
             </div>
           )}
 

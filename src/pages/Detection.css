@@ -42,6 +42,7 @@
 
 /* Error banner */
 .det-error{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:var(--red-700);font-size:13px;margin-top:12px}
+.det-error-tray{background:#fffbeb;border-color:#fde68a;color:#92400e}
 
 /* Empty / idle state */
 .det-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;text-align:center;color:var(--text-secondary)}
