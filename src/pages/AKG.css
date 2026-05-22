@@ -1603,3 +1603,204 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ── Portion Rule Banner (header) ──────────────────────────────────── */
+.akg-portion-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.apr-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.apr-kecil {
+  background: rgba(8, 145, 178, 0.10);
+  border: 1px solid rgba(8, 145, 178, 0.25);
+  color: #0e7490;
+}
+
+.apr-besar {
+  background: rgba(245, 158, 11, 0.10);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #b45309;
+}
+
+.apr-sep {
+  color: var(--text-faint, #94a3b8);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ── Auto-portion table badge ──────────────────────────────────────── */
+.th-auto-portion {
+  color: #7c3aed !important;
+  background: rgba(139, 92, 246, 0.06) !important;
+}
+
+/* ── Two-row portion column ────────────────────────────────────────── */
+.td-portion-both {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 220px;
+}
+
+.td-pb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  flex-wrap: wrap;
+  transition: opacity .15s ease;
+}
+
+/* Target row: highlighted */
+.td-pb-active {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+/* Non-target row: dimmed */
+.td-pb-dim {
+  opacity: 0.38;
+}
+
+.td-pb-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 58px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.td-pb-range {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.td-pb-range small {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-left: 1px;
+}
+
+.td-pb-macro {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.td-pb-target-tag {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #dcfce7;
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.td-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.badge-besar-auto {
+  background: rgba(245, 158, 11, 0.13);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.badge-kecil-auto {
+  background: rgba(8, 145, 178, 0.12);
+  color: #0e7490;
+  border: 1px solid rgba(8, 145, 178, 0.22);
+}
+
+/* ── Comparison card: active / dim states ──────────────────────────── */
+.ape-target-badge {
+  margin-bottom: 10px;
+}
+
+.atb-kecil,
+.atb-besar {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.atb-kecil {
+  background: rgba(8, 145, 178, 0.12);
+  color: #0e7490;
+  border: 1px solid rgba(8, 145, 178, 0.22);
+}
+
+.atb-besar {
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+/* Active column: highlighted */
+.ape-col-active {
+  position: relative;
+  opacity: 1;
+}
+
+/* Dim column: grayed out to show it's not the target */
+.ape-col-dim {
+  opacity: 0.42;
+  filter: grayscale(0.4);
+}
+
+/* Green top accent on the active column */
+.ape-active-indicator {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.ape-col {
+  position: relative;
+}
+
+/* Dim bar */
+.ape-bar-dim {
+  opacity: 0.25 !important;
+}
+
+/* Active label in bar-labels */
+.ape-lbl-active {
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+}

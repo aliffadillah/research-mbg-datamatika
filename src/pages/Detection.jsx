@@ -1,60 +1,33 @@
-import { useState, useRef, useCallback } from 'react'
-import { Upload, Camera, Save, Download, RefreshCw, BarChart3, AlertCircle, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { Upload, Camera, Save, Download, RefreshCw, AlertCircle, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { evaluateNutrition, PORTION_PERCENTAGES } from '../utils/nutritionEvaluator'
 import './Detection.css'
 
-// ── Nutrition icon map ────────────────────────────────────────────
-const NUT_ICONS = {
-  Calories: { emoji: '🔥', color: 'var(--grad-fire)' },
-  Protein: { emoji: 'P', color: 'var(--grad-brand)' },
-  Carbs: { emoji: 'C', color: 'var(--grad-ocean)' },
-  Fat: { emoji: 'F', color: 'var(--grad-violet)' },
-  Fiber: { emoji: '🌿', color: 'var(--grad-nature)' },
-}
-
-// MBG targets for delta calculation
-const MBG_TARGETS = {
-  besar: { calories: 800, protein: 31.5, carbs: 113, fat: 22, fiber: 13 },
-  kecil: { calories: 600, protein: 24, carbs: 85, fat: 17, fiber: 10 },
-}
-
-// Static pipeline info (model architecture doesn't change per-request)
-const PIPELINE = [
-  { cls: 'n1', code: 'BB', title: 'Backbone', desc: 'HGNetV2 extracts multi-scale feature maps from the input image.', k: 'Tensor out', v: '[1, 256, H/16, W/16]' },
-  { cls: 'n2', code: 'EN', title: 'Encoder', desc: 'Efficient hybrid encoder fuses multi-scale features with attention.', k: 'Memory tokens', v: '2,400' },
-  { cls: 'n3', code: 'DE', title: 'Decoder', desc: 'IoU-aware query selection + 6-layer decoder predicts boxes & classes.', k: 'Queries', v: '300' },
-  { cls: 'n4', code: 'OUT', title: 'Detection Output', desc: 'NMS-free post-processing emits final boxes above confidence threshold.', k: 'Model', v: 'RT-DETR v2.1' },
-]
-
 // ── Helpers ───────────────────────────────────────────────────────
-function pctDelta(actual, target) {
-  if (!target) return { text: '0%', warn: false, neutral: true }
-  const p = ((actual - target) / target) * 100
-  const warn = p < -20
-  const neutral = Math.abs(p) < 5
-  return {
-    text: `${p >= 0 ? '+' : ''}${p.toFixed(0)}%`,
-    warn,
-    neutral,
-  }
-}
-
 function fmtNum(n) {
   return typeof n === 'number' ? n.toFixed(1).replace(/\.0$/, '') : '—'
 }
 
 const round1 = (n) => Math.round(n * 10) / 10
 
-function estimateGrams(className, bboxAreaPct = 10) {
-  const name = className.toLowerCase()
-  let base = 80
-  if (name.includes('nasi')) base = 150
-  else if (['ayam', 'ikan', 'rendang', 'bakso'].some(k => name.includes(k))) base = 80
-  else if (['kangkung', 'sayur', 'tumis', 'sop', 'gado'].some(k => name.includes(k))) base = 65
-  else if (['tempe', 'tahu', 'telur', 'perkedel'].some(k => name.includes(k))) base = 50
-  else if (['pisang', 'buah'].some(k => name.includes(k))) base = 100
-  else if (name.includes('kerupuk')) base = 20
-  const factor = Math.max(0.6, Math.min(2.0, (bboxAreaPct / 10) * 1.2))
-  return Math.round(base * factor)
+// Calculate average AKG from fetched data
+function calculateAverageAKG(akgData) {
+  if (!akgData || akgData.length === 0) return null
+  const sum = akgData.reduce((acc, item) => ({
+    energy: acc.energy + (item.energy || 0),
+    protein: acc.protein + (item.protein || 0),
+    carbs: acc.carbs + (item.carbs || 0),
+    fat: acc.fat + (item.fat || 0),
+    fiber: acc.fiber + (item.fiber || 0),
+  }), { energy: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })
+  const count = akgData.length
+  return {
+    energy: Math.round(sum.energy / count),
+    protein: Math.round((sum.protein / count) * 10) / 10,
+    carbs: Math.round((sum.carbs / count) * 10) / 10,
+    fat: Math.round((sum.fat / count) * 10) / 10,
+    fiber: Math.round((sum.fiber / count) * 10) / 10,
+  }
 }
 
 // ── States ────────────────────────────────────────────────────────
@@ -63,11 +36,37 @@ export default function Detection() {
   const [status, setStatus] = useState('idle')
   const [result, setResult] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [errorCode, setErrorCode] = useState('')      // e.g. TRAY_NOT_FOUND
+  const [errorCode, setErrorCode] = useState('')
   const [preview, setPreview] = useState(null)
   const [dragOver, setDragOver] = useState(false)
   const [history, setHistory] = useState([])
+  const [akgData, setAkgData] = useState([])
+  const [akgLoading, setAkgLoading] = useState(true)
   const fileInputRef = useRef(null)
+
+  // ── Fetch AKG data on mount ─────────────────────────────────────
+  useEffect(() => {
+    async function fetchAKG() {
+      try {
+        const res = await fetch('/api/akg')
+        if (res.ok) {
+          const json = await res.json()
+          setAkgData(json.data ?? [])
+          if ((json.data ?? []).length === 0) {
+            await fetch('/api/akg/seed', { method: 'POST' })
+            const reRes = await fetch('/api/akg')
+            const reJson = await reRes.json()
+            setAkgData(reJson.data ?? [])
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch AKG:', e)
+      } finally {
+        setAkgLoading(false)
+      }
+    }
+    fetchAKG()
+  }, [])
 
   // ── Core detect function ────────────────────────────────────────
   const runDetect = useCallback(async (file) => {
@@ -100,7 +99,6 @@ export default function Detection() {
             const nutRes = await fetch(`/api/nutrition/lookup?name=${encodeURIComponent(det.class_name)}`)
             const nutData = await nutRes.json()
             const nut = nutData.nutrition ?? {}
-
             return {
               ...det,
               nutrition_found: nutData.found ?? false,
@@ -136,26 +134,17 @@ export default function Detection() {
         { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
       )
 
-      const targets = MBG_TARGETS[portion]
-      const nutrients = {}
-      let allMet = true
-      for (const [key, target] of Object.entries(targets)) {
-        const actual = totals[key] ?? 0
-        const pct = round1((actual / target) * 100)
-        if (pct < 80) allMet = false
-        nutrients[key] = { actual, target, percentage: pct, met: pct >= 80 }
+      const avgAKG = calculateAverageAKG(akgData)
+      const dailyAKG = avgAKG || {
+        energy: 2100, protein: 65, carbs: 300, fat: 65, fiber: 30,
       }
+      const nutritionEvaluation = evaluateNutrition(totals, dailyAKG, portion)
 
       const combined = {
         ...modelData,
         detections: enriched,
         nutrition_summary: totals,
-        mbg_compliance: {
-          portion,
-          portion_label: portion === 'besar' ? 'Porsi Besar · SMP/SMA' : 'Porsi Kecil · SD',
-          compliant: allMet,
-          nutrients,
-        },
+        akg_evaluation: nutritionEvaluation,
       }
 
       setResult(combined)
@@ -167,7 +156,7 @@ export default function Detection() {
       setErrorMsg(err.message)
       setErrorCode(err.code || '')
     }
-  }, [portion])
+  }, [portion, akgData])
 
   // ── Event handlers ──────────────────────────────────────────────
   const onFileChange = (e) => {
@@ -183,18 +172,11 @@ export default function Detection() {
     if (file) runDetect(file)
   }
 
-  const onHistoryClick = (item) => {
-    setResult(item.result)
-    setPreview(item.url)
-    setStatus('success')
-  }
-
   const onRerun = () => {
     if (history[0]) runDetect(history[0].file || null)
     else fileInputRef.current?.click()
   }
 
-  // Reset ke state awal untuk coba foto lain
   const onNewPhoto = () => {
     setStatus('idle')
     setResult(null)
@@ -202,31 +184,72 @@ export default function Detection() {
     setErrorMsg('')
   }
 
-  // ── Derived UI data ─────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────
   const detections = result?.detections ?? []
   const nutrition = result?.nutrition_summary ?? {}
-  const compliance = result?.mbg_compliance ?? {}
+  const evaluation = result?.akg_evaluation
   const infMs = result?.inference_ms ?? 0
   const imgMeta = result?.image_meta ?? {}
   const overlayB64 = result?.overlay_image ?? ''
   const avgConf = result?.avg_confidence ?? 0
-  const targets = MBG_TARGETS[portion]
 
-  const nutCards = [
-    { key: 'calories', label: 'Calories', unit: 'kcal', value: nutrition.calories },
-    { key: 'protein', label: 'Protein', unit: 'g', value: nutrition.protein },
-    { key: 'carbs', label: 'Carbs', unit: 'g', value: nutrition.carbs },
-    { key: 'fat', label: 'Fat', unit: 'g', value: nutrition.fat },
-    { key: 'fiber', label: 'Fiber', unit: 'g', value: nutrition.fiber },
+  const hasResult = status === 'success' && result
+
+  // AKG targets from real DB (via evaluation object)
+  // Compute BOTH Porsi Besar (30-35%) and Porsi Kecil (20-25%) from the same AKG
+  const lunchTarget = evaluation?.target ?? null
+  const midPctBesar = 0.325   // midpoint of 30-35%
+  const midPctKecil = 0.225   // midpoint of 20-25%
+
+  // Derive daily AKG from whichever target we have, then compute both
+  const dailyAKG = lunchTarget ? {
+    energy:  lunchTarget.energy  / (portion === 'besar' ? midPctBesar : midPctKecil),
+    protein: lunchTarget.protein / (portion === 'besar' ? midPctBesar : midPctKecil),
+    carbs:   lunchTarget.carbs   / (portion === 'besar' ? midPctBesar : midPctKecil),
+    fat:     lunchTarget.fat     / (portion === 'besar' ? midPctBesar : midPctKecil),
+    fiber:   lunchTarget.fiber   / (portion === 'besar' ? midPctBesar : midPctKecil),
+  } : null
+
+  const round1 = (n) => Math.round(n * 10) / 10
+  const tBesar = dailyAKG ? {
+    energy:  Math.round(dailyAKG.energy  * midPctBesar),
+    protein: round1(dailyAKG.protein * midPctBesar),
+    carbs:   round1(dailyAKG.carbs   * midPctBesar),
+    fat:     round1(dailyAKG.fat     * midPctBesar),
+    fiber:   round1(dailyAKG.fiber   * midPctBesar),
+  } : { energy: 800, protein: 20, carbs: 100, fat: 22, fiber: 10 }
+
+  const tKecil = dailyAKG ? {
+    energy:  Math.round(dailyAKG.energy  * midPctKecil),
+    protein: round1(dailyAKG.protein * midPctKecil),
+    carbs:   round1(dailyAKG.carbs   * midPctKecil),
+    fat:     round1(dailyAKG.fat     * midPctKecil),
+    fiber:   round1(dailyAKG.fiber   * midPctKecil),
+  } : { energy: 600, protein: 14, carbs: 70, fat: 15, fiber: 7 }
+
+  // Active target = selected portion
+  const activeTarget = portion === 'besar' ? tBesar : tKecil
+  const energyPct = activeTarget.energy > 0
+    ? Math.round((nutrition.calories / activeTarget.energy) * 100) : 0
+
+  // Portion labels
+  const portionLabel = portion === 'besar' ? 'Porsi Besar' : 'Porsi Kecil'
+  const portionPct   = portion === 'besar' ? '30–35%' : '20–25%'
+  const compliant    = evaluation?.compliant
+
+  // Nutrient rows
+  const NUTRIENT_ROWS = [
+    { key: 'energy',  label: 'Energi',      icon: '🔥', actual: nutrition.calories, besar: tBesar.energy,  kecil: tKecil.energy,  unit: 'kkal', col: '#d97706' },
+    { key: 'protein', label: 'Protein',     icon: '🥩', actual: nutrition.protein,  besar: tBesar.protein, kecil: tKecil.protein, unit: 'g',    col: '#ef4444' },
+    { key: 'carbs',   label: 'Karbohidrat', icon: '🍚', actual: nutrition.carbs,    besar: tBesar.carbs,   kecil: tKecil.carbs,   unit: 'g',    col: '#10b981' },
+    { key: 'fat',     label: 'Lemak',       icon: '🧈', actual: nutrition.fat,      besar: tBesar.fat,     kecil: tKecil.fat,     unit: 'g',    col: '#0891b2' },
+    { key: 'fiber',   label: 'Serat',       icon: '🥬', actual: nutrition.fiber,    besar: tBesar.fiber,   kecil: tKecil.fiber,   unit: 'g',    col: '#8b5cf6' },
   ]
 
   // ════════════════════════════════════════════════════════════════
-  const hasResult = status === 'success' && result
-
   return (
     <div className={`det-content ${hasResult ? 'det-has-result' : 'det-no-result'}`}>
 
-      {/* Hidden file input — selalu tersedia */}
       <input
         ref={fileInputRef}
         type="file"
@@ -235,13 +258,12 @@ export default function Detection() {
         onChange={onFileChange}
       />
 
-      {/* ── UPLOAD PANEL — hanya tampil saat belum ada hasil ─────── */}
+      {/* ── UPLOAD PANEL ──────────────────────────────────────── */}
       {!hasResult && (
         <div className="card det-upload-center">
           <h3>Upload Food Tray Image</h3>
           <div className="sub">Drag-drop a photo, paste from clipboard, or choose from device</div>
 
-          {/* Drop zone */}
           <div
             className={`dz ${dragOver ? 'dz-over' : ''} ${status === 'loading' ? 'dz-loading' : ''}`}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
@@ -278,7 +300,6 @@ export default function Detection() {
             )}
           </div>
 
-          {/* Error banner */}
           {status === 'error' && (
             <div className={`det-error ${errorCode === 'TRAY_NOT_FOUND' ? 'det-error-tray' : ''}`}>
               <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -297,11 +318,9 @@ export default function Detection() {
                 onClick={() => { setStatus('idle'); setErrorMsg(''); setErrorCode('') }}>
                 Coba Lagi
               </button>
-
             </div>
           )}
 
-          {/* Portion toggle */}
           <h3 style={{ marginTop: 20 }}>Portion size</h3>
           <div className="sub">Select MBG portion category for accurate nutrition scaling</div>
           <div className="portion-toggle">
@@ -315,15 +334,12 @@ export default function Detection() {
         </div>
       )}
 
-      {/* ── DETECTION RESULT (kiri saat ada hasil) ──────────────── */}
+      {/* ── DETECTION RESULT (left) ─────────────────────────── */}
       {hasResult && (
         <div className="card det-result-left">
-          {/* Header row dengan tombol Foto Lain */}
           <div className="det-result-header">
             <div>
-              <h3 style={{ margin: 0 }}>
-                Detection Result{' '}
-              </h3>
+              <h3 style={{ margin: 0 }}>Detection Result</h3>
               <div className="sub" style={{ margin: '2px 0 0' }}>
                 RT-DETR detected <strong>{detections.length}</strong> food item{detections.length !== 1 ? 's' : ''} with avg confidence{' '}
                 <strong>{(avgConf * 100).toFixed(1)}%</strong>
@@ -335,7 +351,6 @@ export default function Detection() {
             </button>
           </div>
 
-          {/* Image with overlay */}
           <div className="canvas-wrap" style={{ marginTop: 12 }}>
             <div className="scan-badge">
               <i className="scan-dot" />
@@ -345,7 +360,6 @@ export default function Detection() {
               <span className="chip-dark">{imgMeta.width} × {imgMeta.height}</span>
               <span className="chip-dark">RT-DETR v2.1</span>
             </div>
-
             {overlayB64 ? (
               <img
                 src={`data:image/jpeg;base64,${overlayB64}`}
@@ -366,7 +380,6 @@ export default function Detection() {
             )}
           </div>
 
-          {/* Actions */}
           <div className="det-actions">
             <button className="btn btn-primary btn-sm"><Save size={14} />Save Result</button>
             <button className="btn btn-outline btn-sm"><Download size={14} />Download PDF</button>
@@ -377,109 +390,119 @@ export default function Detection() {
         </div>
       )}
 
-      {/* NUTRITION INFO (kanan saat ada hasil) */}
+      {/* ── NUTRITION + AKG PANEL (right) ───────────────── */}
       {hasResult && (
         <div className="card det-nutrition-right">
-          {/* Detected items list — di atas Nutrition Summary */}
-          <div className="items-list items-list-top">
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
-              Detected Items
-            </h4>
+
+          {/* ── Header: Verdict ────────────────────── */}
+          <div className="ntr-top-header">
+            <div className="ntr-portion-pill">
+              <div>
+                <div className="ntr-portion-name">Kesesuaian Gizi MBG</div>
+                <div className="ntr-portion-pct">{lunchTarget ? 'Target dari database AKG' : 'Target estimasi'}</div>
+              </div>
+            </div>
+            {evaluation && (
+              <div className={`ntr-verdict ${compliant ? 'ntr-verdict-ok' : 'ntr-verdict-warn'}`}>
+                {compliant
+                  ? <><CheckCircle2 size={12} />Sesuai AKG</>
+                  : <><XCircle size={12} />Belum Sesuai</>
+                }
+              </div>
+            )}
+          </div>
+
+          {/* ── Detected Items ──────────────────────────── */}
+          <div className="det-items-scroll">
             {detections.map((item, i) => {
               const n = item.nutrition ?? {}
               return (
                 <div className="det-item-card" key={i}>
-                  {/* Baris atas: dot + nama + confidence */}
                   <div className="det-item-header">
-                    <span className="items-dot" style={{ background: item.color }} />
+                    <span className="items-dot" style={{ background: item.color ?? '#10b981' }} />
                     <span className="det-item-name">{item.db_name || item.class_name}</span>
-                    <span className="det-item-conf" style={{ color: item.color }}>
+                    <span className="det-item-conf" style={{ color: item.color ?? '#10b981' }}>
                       {(item.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-                  {/* Baris bawah: chip nutrisi */}
                   <div className="det-item-chips">
-                    <span className="nut-chip nut-chip-cal">{n.calories ?? 0} kcal</span>
+                    <span className="nut-chip nut-chip-cal">{n.calories ?? 0} kkal</span>
                     <span className="nut-chip nut-chip-p">P {n.protein ?? 0}g</span>
                     <span className="nut-chip nut-chip-k">K {n.carbs ?? 0}g</span>
                     <span className="nut-chip nut-chip-l">L {n.fat ?? 0}g</span>
-                    <span className="nut-chip nut-chip-f">F {n.fiber ?? 0}g</span>
-                    <span className="nut-chip-unit">/ 100g</span>
+                    <span className="nut-chip nut-chip-f">S {n.fiber ?? 0}g</span>
                   </div>
                 </div>
               )
             })}
           </div>
 
-          <div className="items-nutrition-divider" />
+          <div className="ntr-panel-divider" />
 
-          <h3>Nutrition Summary</h3>
-          <div className="sub">Estimated total nutrition for this meal tray</div>
-
-          {/* Nutrition cards */}
-          <div className="nut-row nut-row-col">
-            {nutCards.map((n) => {
-              const delta = pctDelta(n.value, targets[n.key])
-              const pct = targets[n.key] ? Math.min(120, (n.value / targets[n.key]) * 100) : 0
-              return (
-                <div className="nut-card nut-card-row" key={n.key}>
-                  <div className="nut-head">
-                    <div>
-                      <div className="nut-lbl" style={{ margin: 0 }}>{n.label}</div>
-                      <div className="nut-val" style={{ fontSize: 18 }}>
-                        {fmtNum(n.value)}<span className="nut-unit">{n.unit}</span>
-                      </div>
-                    </div>
-                    <span className={`nut-delta${delta.warn ? ' warn' : delta.neutral ? ' neutral' : ''}`}>
-                      {delta.text}
-                    </span>
-                  </div>
-                  <div className="nut-ring" style={{ marginTop: 8 }}><i style={{ width: `${pct}%` }} /></div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* MBG Compliance */}
-          <div className="mbg-section">
-            <h4>
-              MBG Compliance · {compliance.portion_label ?? `Porsi ${portion}`}
-              <span className={`target-pill ${compliance.compliant ? '' : 'pill-warning'}`}>
-                {compliance.compliant
-                  ? <><CheckCircle2 size={11} /> Compliant</>
-                  : <><XCircle size={11} /> Below target</>}
-              </span>
-            </h4>
-            {Object.entries(compliance.nutrients ?? {}).map(([key, nut]) => (
-              <div className="mbg-row" key={key}>
-                <span className="mbg-nm">{key.charAt(0).toUpperCase() + key.slice(1)}</span>
-                <div className="mbg-track">
-                  <div
-                    className="mbg-fill"
-                    style={{
-                      width: `${Math.min(nut.percentage, 100)}%`,
-                      background: nut.percentage < 60
-                        ? 'linear-gradient(90deg,#f59e0b,#d97706)'
-                        : nut.percentage > 110
-                          ? 'linear-gradient(90deg,#ef4444,#dc2626)'
-                          : 'linear-gradient(90deg,#22c55e,#16a34a)',
-                    }}
-                  />
-                  <div className="mbg-target" style={{ left: '100%' }} />
-                </div>
-                <span className="mbg-val">
-                  {fmtNum(nut.actual)} / {nut.target} {key === 'calories' ? 'kcal' : 'g'}
-                </span>
+          {/* ── 3-Column Comparison Table ─────────────────────── */}
+          <div className="ntr-cmp-table">
+            {/* Column headers */}
+            <div className="ntr-col-headers">
+              <div className="ntr-col-h ntr-col-nutrisi">Gizi</div>
+              <div className="ntr-col-h ntr-col-detected">Terdeteksi</div>
+              <div className={`ntr-col-h ntr-col-besar ${portion === 'besar' ? 'ntr-col-active-besar' : 'ntr-col-inactive'}`}>
+                Porsi Besar
+                <small>30–35% AKG</small>
+                {portion === 'besar' && <span className="ntr-col-selected-dot" />}
               </div>
-            ))}
+              <div className={`ntr-col-h ntr-col-kecil ${portion === 'kecil' ? 'ntr-col-active-kecil' : 'ntr-col-inactive'}`}>
+                Porsi Kecil
+                <small>20–25% AKG</small>
+                {portion === 'kecil' && <span className="ntr-col-selected-dot" />}
+              </div>
+            </div>
+
+            {/* Data rows */}
+            {NUTRIENT_ROWS.map(({ key, label, icon, actual, besar, kecil, unit, col }) => {
+              const pctBesar = besar > 0 ? Math.round((actual / besar) * 100) : 0
+              const pctKecil = kecil > 0 ? Math.round((actual / kecil) * 100) : 0
+              const stBesar = pctBesar >= 80 && pctBesar <= 120 ? 'ok' : pctBesar > 120 ? 'over' : 'low'
+              const stKecil = pctKecil >= 80 && pctKecil <= 120 ? 'ok' : pctKecil > 120 ? 'over' : 'low'
+              return (
+                <div key={key} className="ntr-cmp-row-new">
+                  <div className="ntr-col-nutrisi">
+                    <span className="ntr-row-icon-sm">{icon}</span>
+                    <span className="ntr-row-label-sm">{label}</span>
+                  </div>
+                  <div className="ntr-col-detected">
+                    <span className="ntr-val-actual" style={{ color: col }}>{fmtNum(actual)}</span>
+                    <span className="ntr-val-unit">{unit}</span>
+                  </div>
+                  <div className={`ntr-col-besar ${portion === 'besar' ? 'ntr-col-target-active' : 'ntr-col-target-dim'}`}>
+                    <span className="ntr-val-target">{fmtNum(besar)}{unit}</span>
+                    <span className={`ntr-pct-mini ntr-pct-${stBesar}`}>{pctBesar}%</span>
+                  </div>
+                  <div className={`ntr-col-kecil ${portion === 'kecil' ? 'ntr-col-target-active' : 'ntr-col-target-dim'}`}>
+                    <span className="ntr-val-target">{fmtNum(kecil)}{unit}</span>
+                    <span className={`ntr-pct-mini ntr-pct-${stKecil}`}>{pctKecil}%</span>
+                  </div>
+                </div>
+              )
+            })}
           </div>
 
-          {/* Compare button */}
-          <div className="det-actions" style={{ marginTop: 14 }}>
-            <button className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-              <BarChart3 size={14} />Compare with targets
-            </button>
-          </div>
+          {/* ── Final Verdict ─────────────────────────────────── */}
+          {evaluation && (
+            <div className={`ntr-final-verdict ${compliant ? 'fv-pass' : 'fv-fail'}`}>
+              <div className="fv-icon">
+                {compliant ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+              </div>
+              <div className="fv-text">
+                <div className="fv-main">
+                  {compliant ? 'Menu MBG SESUAI Standar AKG' : 'Menu MBG BELUM SESUAI Standar AKG'}
+                </div>
+                <div className="fv-sub">
+                  Dibandingkan target {portionLabel} ({portionPct} dari AKG harian)
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
     </div>

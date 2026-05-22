@@ -4,7 +4,7 @@ import './AKG.css'
 // ── Constants ────────────────────────────────────────────────────────────────
 const API_BASE = '/api/akg'
 
-const GROUPS = ['Semua', 'Bayi/Anak', 'Laki-Laki', 'Perempuan', 'Perbandingan']
+const GROUPS = ['Semua', 'Bayi/Anak', 'Laki-Laki', 'Perempuan']
 
 const GROUP_OPTIONS = ['Bayi/Anak', 'Laki-Laki', 'Perempuan']
 
@@ -34,6 +34,24 @@ function calcPortion(value, lowPct, highPct) {
 
 function getMax(data, key) {
   return Math.max(...data.map(d => d[key] ?? 0), 1)
+}
+
+function getPortionType(age) {
+  if (!age) return 'besar'
+  const lower = age.toLowerCase()
+  if (lower.includes('bulan')) return 'kecil'
+  const match = lower.match(/^(\d+)/)
+  if (match) {
+    const startAge = parseInt(match[1], 10)
+    if (startAge <= 6) return 'kecil'
+  }
+  return 'besar'
+}
+
+function getPortionParams(type) {
+  return type === 'kecil'
+    ? { lowPct: 0.20, highPct: 0.25, label: 'Porsi Kecil', pctLabel: '20–25%', cls: 'td-kecil', badge: 'badge-kecil-auto' }
+    : { lowPct: 0.30, highPct: 0.35, label: 'Porsi Besar', pctLabel: '30–35%', cls: 'td-besar', badge: 'badge-besar-auto' }
 }
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
@@ -337,11 +355,11 @@ function FormModal({ mode, initial, onClose, onSaved }) {
               <div className="akg-form-preview-title">Preview Porsi MBG</div>
               <div className="akg-form-preview-row">
                 <span className="prev-besar">
-                  🍽️ Porsi Besar (30–35%)
+                  Porsi Besar (30–35%)
                   <strong>{calcPortion(Number(form.energy), 0.30, 0.35).low} – {calcPortion(Number(form.energy), 0.30, 0.35).high} kkal</strong>
                 </span>
                 <span className="prev-kecil">
-                  🥗 Porsi Kecil (20–25%)
+                  Porsi Kecil (20–25%)
                   <strong>{calcPortion(Number(form.energy), 0.20, 0.25).low} – {calcPortion(Number(form.energy), 0.20, 0.25).high} kkal</strong>
                 </span>
               </div>
@@ -468,7 +486,7 @@ export default function AKG() {
 
   // ── Filtered + derived data ───────────────────────────────────────
   const filtered = useMemo(() => {
-    if (activeGroup === 'Semua' || activeGroup === 'Perbandingan') return akgData
+    if (activeGroup === 'Semua') return akgData
     return akgData.filter(d => d.group_name === activeGroup)
   }, [akgData, activeGroup])
 
@@ -483,6 +501,7 @@ export default function AKG() {
     }
   }, [filtered])
 
+  // portionView masih dipakai untuk ringkasan summary cards saja
   const lowPct = portionView === 'besar' ? 0.30 : 0.20
   const highPct = portionView === 'besar' ? 0.35 : 0.25
 
@@ -532,24 +551,22 @@ export default function AKG() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="akg-header">
         <div className="akg-header-text">
-          <h1>
-            Angka Kebutuhan Gizi
-          </h1>
-          <p>Referensi AKG berdasarkan kelompok umur — porsi MBG dihitung otomatis. Data tersimpan di database &amp; bisa diedit.</p>
-        </div>
-        <div className="akg-header-right">
-          <div className="akg-portion-toggle">
-            <button className={`apt-btn ${portionView === 'besar' ? 'active' : ''}`} onClick={() => setPortionView('besar')}>
-              Porsi Besar <small>30–35%</small>
-            </button>
-            <button className={`apt-btn ${portionView === 'kecil' ? 'active' : ''}`} onClick={() => setPortionView('kecil')}>
-              Porsi Kecil <small>20–25%</small>
-            </button>
+          <h1>Angka Kebutuhan Gizi</h1>
+          <p>Referensi AKG berdasarkan kelompok umur — porsi MBG ditetapkan otomatis sesuai usia. Data tersimpan di database &amp; bisa diedit.</p>
+          {/* Rule badge */}
+          <div className="akg-portion-rule">
+            <span className="apr-item apr-kecil">
+              <strong>Porsi Kecil</strong> (20–25% AKG) — Usia 0–6 Tahun
+            </span>
+            <span className="apr-sep">·</span>
+            <span className="apr-item apr-besar">
+              <strong>Porsi Besar</strong> (30–35% AKG) — Usia ≥ 7 Tahun
+            </span>
           </div>
-          <button className="btn-akg-add" onClick={() => setShowAddForm(true)}>
-            + Tambah Data
-          </button>
         </div>
+        <button className="btn-akg-add" onClick={() => setShowAddForm(true)}>
+          + Tambah Data
+        </button>
       </div>
 
       {/* ── Filter Tabs ─────────────────────────────────────────────── */}
@@ -642,9 +659,7 @@ export default function AKG() {
                         <th>Protein (g)</th>
                         <th>Karbohidrat (g)</th>
                         <th>Serat (g)</th>
-                        <th className={portionView === 'besar' ? 'th-besar' : 'th-kecil'}>
-                          {portionView === 'besar' ? '🍽️ Porsi Besar (30–35%)' : '🥗 Porsi Kecil (20–25%)'}
-                        </th>
+                        <th className="th-auto-portion">Target Porsi MBG</th>
                         <th className="th-actions">Aksi</th>
                       </tr>
                     </thead>
@@ -656,9 +671,11 @@ export default function AKG() {
                           </td>
                         </tr>
                       ) : filtered.map((item, i) => {
-                        const portionEnergy = calcPortion(item.energy, lowPct, highPct)
-                        const portionProtein = calcPortion(item.protein, lowPct, highPct)
-                        const portionCarbs = calcPortion(item.carbs, lowPct, highPct)
+                        const pType = getPortionType(item.age)
+                        const pp = getPortionParams(pType)
+                        const portionEnergy = calcPortion(item.energy, pp.lowPct, pp.highPct)
+                        const portionProtein = calcPortion(item.protein, pp.lowPct, pp.highPct)
+                        const portionCarbs = calcPortion(item.carbs, pp.lowPct, pp.highPct)
                         const isGroupHeader = i === 0 || filtered[i - 1]?.group_name !== item.group_name
 
                         return (
@@ -666,37 +683,43 @@ export default function AKG() {
                             <td>
                               <div className="akg-age-cell">
                                 {isGroupHeader && (
-                                  <span className="akg-group-badge">
-                                    {item.group_name}
-                                  </span>
+                                  <span className="akg-group-badge">{item.group_name}</span>
                                 )}
                                 <span className="akg-age">{item.age}</span>
                               </div>
                             </td>
+                            <td>{item.weight}</td>
+                            <td>{item.height}</td>
+                            <td><strong className="td-energy">{item.energy}</strong></td>
+                            <td>{item.fat}</td>
+                            <td>{item.protein}</td>
+                            <td>{item.carbs}</td>
+                            <td>{item.fiber}</td>
                             <td>
-                              <div className="td-energy-cell">{item.weight}<MiniBar value={item.weight} max={80} color="#64748b" /></div>
-                            </td>
-                            <td>
-                              <div className="td-energy-cell">{item.height}<MiniBar value={item.height} max={200} color="#64748b" /></div>
-                            </td>
-                            <td>
-                              <div className="td-energy-cell">
-                                <strong className="td-energy">{item.energy}</strong>
-                                <MiniBar value={item.energy} max={maxEnergy} color="#f59e0b" />
-                              </div>
-                            </td>
-                            <td><div className="td-energy-cell">{item.fat}<MiniBar value={item.fat} max={maxFat} color="#0891b2" /></div></td>
-                            <td><div className="td-energy-cell">{item.protein}<MiniBar value={item.protein} max={maxProtein} color="#ef4444" /></div></td>
-                            <td><div className="td-energy-cell">{item.carbs}<MiniBar value={item.carbs} max={maxCarbs} color="#10b981" /></div></td>
-                            <td><div className="td-energy-cell">{item.fiber}<MiniBar value={item.fiber} max={maxFiber} color="#8b5cf6" /></div></td>
-                            <td>
-                              <div className="td-portion-block">
-                                <div className={`td-portion-val ${portionView === 'besar' ? 'td-besar' : 'td-kecil'}`}>
-                                  {portionEnergy.low} – {portionEnergy.high}<small> kkal</small>
+                              <div className="td-portion-both">
+                                {/* Porsi Besar */}
+                                <div className={`td-pb-row ${pType === 'besar' ? 'td-pb-active' : 'td-pb-dim'}`}>
+                                  <span className="td-pb-label">Porsi Besar</span>
+                                  <span className="td-pb-range td-besar">
+                                    {calcPortion(item.energy, 0.30, 0.35).low}–{calcPortion(item.energy, 0.30, 0.35).high}<small> kkal</small>
+                                  </span>
+                                  <span className="td-pb-macro">
+                                    P:{calcPortion(item.protein, 0.30, 0.35).low}–{calcPortion(item.protein, 0.30, 0.35).high}g
+                                    · K:{calcPortion(item.carbs, 0.30, 0.35).low}–{calcPortion(item.carbs, 0.30, 0.35).high}g
+                                  </span>
+                                  {pType === 'besar' && <span className="td-pb-target-tag">✓ Target</span>}
                                 </div>
-                                <div className="td-portion-macros">
-                                  <span>P: {portionProtein.low}–{portionProtein.high}g</span>
-                                  <span>K: {portionCarbs.low}–{portionCarbs.high}g</span>
+                                {/* Porsi Kecil */}
+                                <div className={`td-pb-row ${pType === 'kecil' ? 'td-pb-active' : 'td-pb-dim'}`}>
+                                  <span className="td-pb-label">Porsi Kecil</span>
+                                  <span className="td-pb-range td-kecil">
+                                    {calcPortion(item.energy, 0.20, 0.25).low}–{calcPortion(item.energy, 0.20, 0.25).high}<small> kkal</small>
+                                  </span>
+                                  <span className="td-pb-macro">
+                                    P:{calcPortion(item.protein, 0.20, 0.25).low}–{calcPortion(item.protein, 0.20, 0.25).high}g
+                                    · K:{calcPortion(item.carbs, 0.20, 0.25).low}–{calcPortion(item.carbs, 0.20, 0.25).high}g
+                                  </span>
+                                  {pType === 'kecil' && <span className="td-pb-target-tag">✓ Target</span>}
                                 </div>
                               </div>
                             </td>
@@ -722,59 +745,81 @@ export default function AKG() {
 
           {activeGroup === 'Perbandingan' && (
             <div className="akg-portion-section">
-              <h2 className="akg-section-title">Perbandingan Porsi MBG</h2>
-              <p className="akg-section-sub">Pembagian nilai gizi per porsi makan — klik kartu untuk detail lengkap</p>
+              <h2 className="akg-section-title">Target Porsi MBG per Kelompok Umur</h2>
+              <p className="akg-section-sub">Porsi ditetapkan otomatis berdasarkan usia — hijau = target yang berlaku, abu = referensi saja</p>
               <div className="akg-portion-grid">
-                {akgData.map((item) => (
-                  <div className="akg-portion-entry" key={item.id} onClick={() => setDetailItem(item)}>
-                    <div className="ape-header">
-                      <div>
-                        <div className="ape-age">{item.age}</div>
-                        <div className="ape-group">{item.group_name}</div>
-                      </div>
-                      <div className="ape-akg-total">
-                        <span>{item.energy}</span>
-                        <small>kkal/hari</small>
-                      </div>
-                    </div>
-                    <div className="ape-body">
-                      <div className="ape-col ape-besar">
-                        <div className="ape-col-title">Porsi Besar</div>
-                        <div className="ape-col-pct">30–35% AKG</div>
-                        <div className="ape-energy">
-                          {calcPortion(item.energy, 0.30, 0.35).low}<span className="ape-energy-sep">–</span>{calcPortion(item.energy, 0.30, 0.35).high}
+                {akgData.map((item) => {
+                  const pType = getPortionType(item.age)
+                  const isKecilTarget = pType === 'kecil'
+                  return (
+                    <div className="akg-portion-entry" key={item.id} onClick={() => setDetailItem(item)}>
+                      {/* Header */}
+                      <div className="ape-header">
+                        <div>
+                          <div className="ape-age">{item.age}</div>
+                          <div className="ape-group">{item.group_name}</div>
                         </div>
-                        <div className="ape-unit">kkal / sajian</div>
-                        <div className="ape-macros">
-                          <span>P: {calcPortion(item.protein, 0.30, 0.35).low}–{calcPortion(item.protein, 0.30, 0.35).high}g</span>
-                          <span>L: {calcPortion(item.fat, 0.30, 0.35).low}–{calcPortion(item.fat, 0.30, 0.35).high}g</span>
-                          <span>K: {calcPortion(item.carbs, 0.30, 0.35).low}–{calcPortion(item.carbs, 0.30, 0.35).high}g</span>
+                        <div className="ape-akg-total">
+                          <span>{item.energy}</span>
+                          <small>kkal/hari</small>
                         </div>
                       </div>
-                      <div className="ape-divider" />
-                      <div className="ape-col ape-kecil">
-                        <div className="ape-col-title">Porsi Kecil</div>
-                        <div className="ape-col-pct">20–25% AKG</div>
-                        <div className="ape-energy">
-                          {calcPortion(item.energy, 0.20, 0.25).low}<span className="ape-energy-sep">–</span>{calcPortion(item.energy, 0.20, 0.25).high}
+
+                      {/* Target badge */}
+                      <div className="ape-target-badge">
+                        <span className={isKecilTarget ? 'atb-kecil' : 'atb-besar'}>
+                          {isKecilTarget ? 'Porsi Kecil (20–25% AKG) — Target untuk usia ini' : 'Porsi Besar (30–35% AKG) — Target untuk usia ini'}
+                        </span>
+                      </div>
+
+                      {/* Portion columns */}
+                      <div className="ape-body">
+                        {/* Porsi Besar */}
+                        <div className={`ape-col ape-besar ${isKecilTarget ? 'ape-col-dim' : 'ape-col-active'}`}>
+                          {!isKecilTarget && <div className="ape-active-indicator" />}
+                          <div className="ape-col-title">Porsi Besar</div>
+                          <div className="ape-col-pct">30–35% AKG</div>
+                          <div className="ape-energy">
+                            {calcPortion(item.energy, 0.30, 0.35).low}<span className="ape-energy-sep">–</span>{calcPortion(item.energy, 0.30, 0.35).high}
+                          </div>
+                          <div className="ape-unit">kkal / sajian</div>
+                          <div className="ape-macros">
+                            <span>P: {calcPortion(item.protein, 0.30, 0.35).low}–{calcPortion(item.protein, 0.30, 0.35).high}g</span>
+                            <span>L: {calcPortion(item.fat, 0.30, 0.35).low}–{calcPortion(item.fat, 0.30, 0.35).high}g</span>
+                            <span>K: {calcPortion(item.carbs, 0.30, 0.35).low}–{calcPortion(item.carbs, 0.30, 0.35).high}g</span>
+                          </div>
                         </div>
-                        <div className="ape-unit">kkal / sajian</div>
-                        <div className="ape-macros">
-                          <span>P: {calcPortion(item.protein, 0.20, 0.25).low}–{calcPortion(item.protein, 0.20, 0.25).high}g</span>
-                          <span>L: {calcPortion(item.fat, 0.20, 0.25).low}–{calcPortion(item.fat, 0.20, 0.25).high}g</span>
-                          <span>K: {calcPortion(item.carbs, 0.20, 0.25).low}–{calcPortion(item.carbs, 0.20, 0.25).high}g</span>
+                        <div className="ape-divider" />
+                        {/* Porsi Kecil */}
+                        <div className={`ape-col ape-kecil ${isKecilTarget ? 'ape-col-active' : 'ape-col-dim'}`}>
+                          {isKecilTarget && <div className="ape-active-indicator" />}
+                          <div className="ape-col-title">Porsi Kecil</div>
+                          <div className="ape-col-pct">20–25% AKG</div>
+                          <div className="ape-energy">
+                            {calcPortion(item.energy, 0.20, 0.25).low}<span className="ape-energy-sep">–</span>{calcPortion(item.energy, 0.20, 0.25).high}
+                          </div>
+                          <div className="ape-unit">kkal / sajian</div>
+                          <div className="ape-macros">
+                            <span>P: {calcPortion(item.protein, 0.20, 0.25).low}–{calcPortion(item.protein, 0.20, 0.25).high}g</span>
+                            <span>L: {calcPortion(item.fat, 0.20, 0.25).low}–{calcPortion(item.fat, 0.20, 0.25).high}g</span>
+                            <span>K: {calcPortion(item.carbs, 0.20, 0.25).low}–{calcPortion(item.carbs, 0.20, 0.25).high}g</span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Progress bar — highlight target portion */}
+                      <div className="ape-energy-bar">
+                        <div className={`ape-energy-bar-besar ${!isKecilTarget ? '' : 'ape-bar-dim'}`} style={{ width: '32.5%' }} />
+                        <div className={`ape-energy-bar-kecil ${isKecilTarget ? '' : 'ape-bar-dim'}`} style={{ width: '22.5%' }} />
+                      </div>
+                      <div className="ape-energy-bar-labels">
+                        <span className={!isKecilTarget ? 'ape-lbl-active' : ''}>Besar ~32.5%</span>
+                        <span className={isKecilTarget ? 'ape-lbl-active' : ''}>Kecil ~22.5%</span>
+                        <span>Sisa 45%</span>
+                      </div>
                     </div>
-                    <div className="ape-energy-bar">
-                      <div className="ape-energy-bar-besar" style={{ width: '32.5%' }} />
-                      <div className="ape-energy-bar-kecil" style={{ width: '22.5%' }} />
-                    </div>
-                    <div className="ape-energy-bar-labels">
-                      <span>Besar ~32.5%</span><span>Kecil ~22.5%</span><span>Sisa 45%</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -785,11 +830,11 @@ export default function AKG() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
             </div>
             <div className="akg-info-text">
-              <strong>Tentang Porsi dalam Program MBG</strong>
+              <strong>Penetapan Porsi MBG Berdasarkan Kelompok Usia</strong>
               <p>
-                <strong>Porsi Besar (30–35% AKG)</strong> diperuntukkan sebagai makan siang utama.
-                <strong> Porsi Kecil (20–25% AKG)</strong> digunakan untuk makan pagi atau makanan selingan.
-                Data AKG tersimpan di database Supabase dan dapat diedit sesuai pembaruan Permenkes RI.
+                <strong>Porsi Kecil (20–25% AKG)</strong> diberikan untuk anak usia <strong>0–6 tahun</strong> (bayi &amp; balita/pra-sekolah).
+                <strong> Porsi Besar (30–35% AKG)</strong> diberikan untuk usia <strong>≥ 7 tahun</strong> (anak sekolah, remaja &amp; dewasa).
+                Penetapan ini mengikuti pedoman program MBG dan AKG Permenkes RI.
               </p>
             </div>
           </div>

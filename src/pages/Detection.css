@@ -132,6 +132,106 @@
 .nut-ring{width:100%;height:4px;background:var(--border-light);border-radius:2px;margin-top:10px;overflow:hidden}
 .nut-ring i{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#22c55e,#16a34a)}
 
+/* ── Nutrient Summary Grid ──────────────────────────────────────── */
+.nut-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.nut-summary-card{padding:14px;border-radius:12px;border:1px solid var(--border-light);background:linear-gradient(135deg,#ffffff,var(--slate-50));display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.nut-summary-card:nth-child(1){grid-column:span 3;flex-direction:row;justify-content:center;gap:12px;padding:18px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border-color:#fde68a}
+.nut-summary-card:nth-child(4),.nut-summary-card:nth-child(5){grid-column:span 1}
+.nut-summary-icon{font-size:24px}
+.nut-summary-card:nth-child(1) .nut-summary-icon{font-size:32px}
+.nut-summary-info{display:flex;align-items:baseline;gap:4px}
+.nut-summary-value{font-size:20px;font-weight:800;color:var(--text-primary)}
+.nut-summary-card:nth-child(1) .nut-summary-value{font-size:28px;color:#d97706}
+.nut-summary-unit{font-size:12px;color:var(--text-muted);font-weight:500}
+.nut-summary-target{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* ── Energy Progress Ring ──────────────────────────────────────── */
+.energy-progress-section{margin-top:16px;padding:14px;border-radius:12px;background:var(--slate-50);border:1px solid var(--border-light)}
+.energy-progress-section h4{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-primary)}
+.energy-progress-wrap{display:flex;align-items:center;gap:16px}
+.energy-ring{position:relative;width:90px;height:90px;flex-shrink:0}
+.energy-ring svg{width:100%;height:100%}
+.energy-ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.energy-ring-pct{font-size:18px;font-weight:800;color:var(--text-primary);display:block;line-height:1}
+.energy-ring-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em}
+.energy-details{flex:1;display:flex;flex-direction:column;gap:6px}
+.energy-detail-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary)}
+.energy-detail-row strong{color:var(--text-primary);font-weight:700}
+.energy-status{font-weight:700}
+.status-green{color:#16a34a}
+.status-orange{color:#d97706}
+
+/* ── AKG Evaluation Card ───────────────────────────────────────── */
+.akg-eval-card{margin-top:16px;padding:16px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,0.05),rgba(139,92,246,0.02));border:1px solid rgba(139,92,246,0.15)}
+.akg-eval-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.akg-eval-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--text-primary)}
+.akg-portion-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:rgba(139,92,246,0.1);color:#7c3aed;font-size:11px;font-weight:600;margin-bottom:12px}
+.verdict-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700}
+.verdict-badge.verdict-ok{background:#dcfce7;color:#166534}
+.verdict-badge.verdict-warn{background:#fef3c7;color:#92400e}
+
+/* Energy Summary */
+.akg-energy-summary{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.05));margin-bottom:14px}
+.akg-energy-main{display:flex;align-items:baseline;gap:4px}
+.akg-energy-value{font-size:28px;font-weight:800;color:#d97706}
+.akg-energy-unit{font-size:14px;color:var(--text-muted);font-weight:500}
+.akg-energy-target{font-size:12px;color:var(--text-muted)}
+
+/* Target vs Actual */
+.akg-target-actual{margin-bottom:16px}
+.akg-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px}
+.akg-ntr-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.akg-ntr-info{display:flex;align-items:center;gap:6px;width:90px;flex-shrink:0}
+.akg-ntr-label{font-size:12px;font-weight:600;color:var(--text-secondary)}
+.akg-ntr-bar{flex:1}
+.akg-ntr-status{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;width:45px;justify-content:flex-end}
+.akg-ntr-status.status-ok{color:#16a34a}
+.akg-ntr-status.status-warn{color:#d97706}
+
+/* Nutrient Bar */
+.ntr-bar-wrap{width:100%}
+.ntr-track{width:100%;height:6px;background:var(--slate-200);border-radius:3px;position:relative;overflow:hidden}
+.ntr-fill{height:100%;border-radius:3px;transition:width .3s ease}
+.ntr-target-marker{position:absolute;top:-2px;width:2px;height:10px;background:#1e293b;border-radius:1px}
+.ntr-values{display:flex;gap:4px;margin-top:3px;font-size:10px}
+.ntr-actual{font-weight:700;color:var(--text-primary)}
+.ntr-target{color:var(--text-muted)}
+
+/* Macro Section */
+.akg-macro-section{margin-bottom:14px}
+.akg-macro-hint{font-size:10px;color:var(--text-muted);margin-bottom:10px;margin-top:-6px}
+.akg-macro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.akg-macro-card{padding:10px;border-radius:10px;background:#fff;border:1px solid var(--border-light)}
+.akg-macro-card.macro-ok{border-color:rgba(34,197,94,0.3);background:linear-gradient(135deg,#f0fdf4,#dcfce7)}
+.akg-macro-card.macro-warn{border-color:rgba(245,158,11,0.3);background:linear-gradient(135deg,#fffbeb,#fef3c7)}
+.akg-macro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.akg-macro-name{font-size:11px;font-weight:700;color:var(--text-primary)}
+.macro-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px}
+.macro-badge.macro-badge-ok{background:#dcfce7;color:#166534}
+.macro-badge.macro-badge-warn{background:#fef3c7;color:#92400e}
+.akg-macro-values{display:flex;justify-content:space-between;margin-bottom:6px}
+.akg-macro-g{font-size:14px;font-weight:800;color:var(--text-primary)}
+.akg-macro-kcal{font-size:10px;color:var(--text-muted)}
+.akg-macro-bar-wrap{margin-bottom:4px}
+.akg-macro-bar{width:100%;height:8px;background:var(--slate-200);border-radius:4px;position:relative;overflow:hidden}
+.akg-macro-fill{height:100%;border-radius:4px;transition:width .3s ease}
+.akg-macro-range{position:absolute;top:0;height:100%;background:rgba(30,41,59,0.15);border-radius:2px}
+.akg-macro-pct{font-size:11px;font-weight:700;color:var(--text-primary);text-align:center}
+.akg-macro-std{font-size:9px;color:var(--text-muted);text-align:center;margin-top:2px}
+
+/* Final Verdict */
+.akg-final-verdict{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px}
+.akg-final-verdict.verdict-pass{background:linear-gradient(135deg,rgba(34,197,94,0.15),rgba(22,163,74,0.1));border:1px solid rgba(34,197,94,0.25)}
+.akg-final-verdict.verdict-fail{background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(217,119,6,0.1));border:1px solid rgba(245,158,11,0.25)}
+.verdict-icon{flex-shrink:0}
+.verdict-pass .verdict-icon{color:#16a34a}
+.verdict-fail .verdict-icon{color:#d97706}
+.verdict-text{flex:1}
+.verdict-main{font-size:13px;font-weight:800}
+.verdict-pass .verdict-main{color:#166534}
+.verdict-fail .verdict-main{color:#92400e}
+.verdict-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+
 /* MBG */
 .mbg-section{margin-top:18px;padding-top:18px;border-top:1px dashed var(--border)}
 .mbg-section h4{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
@@ -164,3 +264,255 @@
 .pipe-lat{display:flex;justify-content:space-between;font-size:var(--font-xs)}
 .pipe-k{color:var(--text-muted)}
 .pipe-v{color:#bbf7d0;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ── New Premium Nutrition Panel ───────────────────────────────── */
+
+/* Panel Section */
+.ntr-panel-section{margin-bottom:0}
+.ntr-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ntr-panel-title{font-size:13px;font-weight:700;color:var(--text-primary)}
+.ntr-panel-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:var(--radius-full);background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700}
+.ntr-panel-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0}
+
+/* Detected items scroll area */
+.det-items-scroll{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;padding-right:2px;scrollbar-width:thin}
+
+/* AKG Portion Label */
+.ntr-akg-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ntr-akg-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-full);background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(99,102,241,0.08));border:1px solid rgba(139,92,246,0.20);color:#7c3aed;font-size:12px;font-weight:700}
+.ntr-akg-source{font-size:10px;color:var(--text-faint);font-weight:500;font-style:italic}
+
+/* Energy Hero Card */
+.ntr-energy-hero{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.ntr-energy-hero::before{content:'';position:absolute;top:-30px;right:-20px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,0.07)}
+.ntr-energy-left{display:flex;align-items:center;gap:14px;z-index:1}
+.ntr-energy-icon{font-size:28px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2))}
+.ntr-energy-value{font-size:32px;font-weight:900;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;line-height:1;display:flex;align-items:baseline;gap:6px}
+.ntr-energy-unit{font-size:14px;font-weight:600;opacity:0.8}
+.ntr-energy-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-top:3px;font-weight:500}
+.ntr-energy-ring{position:relative;width:56px;height:56px;flex-shrink:0;z-index:1}
+.ntr-energy-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+
+/* Nutrients Section */
+.ntr-nutrients-section{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.ntr-nutrients-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:4px}
+
+/* Nutrient Row Item */
+.ntr-row-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--ntr-bg,rgba(100,116,139,0.05));border:1px solid rgba(0,0,0,0.04);transition:all .15s ease}
+.ntr-row-item:hover{transform:translateX(2px);box-shadow:0 2px 8px -2px rgba(0,0,0,0.08)}
+.ntr-row-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.ntr-row-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ntr-row-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ntr-row-label{font-size:12px;font-weight:600;color:var(--text-secondary)}
+.ntr-row-vals{display:flex;align-items:baseline;gap:4px}
+.ntr-row-actual{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.ntr-row-sep{font-size:11px;color:var(--text-faint)}
+.ntr-row-target{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.ntr-row-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;width:90px}
+.ntr-row-bar-wrap{width:100%}
+.ntr-row-bar-track{width:100%;height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:visible;position:relative}
+.ntr-row-bar-fill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+.ntr-row-bar-target-line{position:absolute;top:-2px;right:0;width:2px;height:11px;background:rgba(30,41,59,0.25);border-radius:1px}
+.ntr-row-pct-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:var(--radius-full)}
+.ntr-pct-ok{background:#dcfce7;color:#15803d}
+.ntr-pct-over{background:#fee2e2;color:#b91c1c}
+.ntr-pct-low{background:#fef3c7;color:#92400e}
+
+/* ── Unified AKG Comparison Panel ──────────────────────────────── */
+
+/* Top header row */
+.ntr-top-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.ntr-portion-pill{display:flex;align-items:center;gap:10px}
+.ntr-portion-emoji{font-size:22px;line-height:1}
+.ntr-portion-name{font-size:13px;font-weight:700;color:var(--text-primary)}
+.ntr-portion-pct{font-size:10px;color:var(--text-muted);font-weight:500;margin-top:1px}
+.ntr-verdict{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--radius-full);font-size:11px;font-weight:700;flex-shrink:0}
+.ntr-verdict-ok{background:#dcfce7;color:#15803d}
+.ntr-verdict-warn{background:#fef3c7;color:#92400e}
+
+/* Section title */
+.ntr-cmp-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ntr-cmp-source{font-size:10px;font-weight:500;font-style:italic;text-transform:none;letter-spacing:0;color:var(--primary);background:var(--primary-light);padding:2px 7px;border-radius:var(--radius-full)}
+
+/* Energy hero row */
+.ntr-cmp-energy{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:13px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;margin-bottom:10px}
+.ntr-cmp-energy-left{display:flex;align-items:center;gap:12px}
+.ntr-cmp-energy-icon{font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))}
+.ntr-cmp-energy-label{font-size:10px;font-weight:600;opacity:0.75;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px}
+.ntr-cmp-energy-vals{display:flex;align-items:baseline;gap:4px}
+.ntr-cmp-actual-big{font-size:26px;font-weight:900;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;line-height:1}
+.ntr-cmp-unit-big{font-size:12px;font-weight:600;opacity:0.8}
+.ntr-cmp-slash{font-size:14px;opacity:0.45;margin:0 2px}
+.ntr-cmp-target-big{font-size:13px;font-weight:600;opacity:0.75;font-variant-numeric:tabular-nums}
+.ntr-cmp-energy-right{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.ntr-cmp-ring{position:relative;width:48px;height:48px}
+.ntr-cmp-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.ntr-cmp-status-text{font-size:10px;font-weight:700}
+.st-ok{color:#86efac}.st-low{color:#fde68a}.st-over{color:#fca5a5}
+
+/* Macro rows */
+.ntr-cmp-rows{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.ntr-cmp-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:11px;background:var(--slate-50);border:1px solid rgba(0,0,0,0.04);transition:transform .15s ease,box-shadow .15s ease}
+.ntr-cmp-row:hover{transform:translateX(2px);box-shadow:0 2px 8px -2px rgba(0,0,0,0.08)}
+.ntr-cmp-row-ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ntr-cmp-row-body{flex:1;min-width:0}
+.ntr-cmp-row-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.ntr-cmp-row-label{font-size:12px;font-weight:600;color:var(--text-secondary)}
+.ntr-cmp-row-nums{display:flex;align-items:baseline;gap:2px}
+.ntr-cmp-row-actual{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.ntr-cmp-row-tgt{font-size:11px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.ntr-cmp-row-bar-track{width:100%;height:7px;background:rgba(0,0,0,0.08);border-radius:4px;position:relative;overflow:visible}
+.ntr-cmp-row-bar-fill{height:100%;border-radius:4px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+.ntr-cmp-row-target-line{position:absolute;top:-2px;right:0;width:2px;height:11px;background:rgba(30,41,59,0.2);border-radius:1px}
+.ntr-cmp-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:var(--radius-full);flex-shrink:0}
+.b-ok{background:#dcfce7;color:#15803d}
+.b-over{background:#fee2e2;color:#b91c1c}
+.b-low{background:#fef3c7;color:#92400e}
+
+/* Final Verdict */
+.ntr-final-verdict{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:12px;margin-top:4px}
+.fv-pass{background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(22,163,74,0.08));border:1px solid rgba(34,197,94,0.22)}
+.fv-fail{background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.08));border:1px solid rgba(245,158,11,0.22)}
+.fv-icon{flex-shrink:0}
+.fv-pass .fv-icon{color:#16a34a}
+.fv-fail .fv-icon{color:#d97706}
+.fv-main{font-size:12px;font-weight:800}
+.fv-pass .fv-main{color:#166534}
+.fv-fail .fv-main{color:#92400e}
+.fv-sub{font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* ── 3-Column Comparison Table ──────────────────────────────────── */
+.ntr-cmp-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+/* Column header row */
+.ntr-col-headers {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 4px;
+  padding: 0 2px;
+}
+
+.ntr-col-h {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+}
+
+.ntr-col-h small {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.ntr-col-nutrisi   { align-items: flex-start; color: var(--text-muted); }
+.ntr-col-detected  { background: rgba(0,0,0,0.04); color: var(--text-secondary); }
+
+.ntr-col-active-besar {
+  background: rgba(245,158,11,0.12);
+  color: #92400e;
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.ntr-col-active-kecil {
+  background: rgba(8,145,178,0.10);
+  color: #0e7490;
+  border: 1px solid rgba(8,145,178,0.22);
+}
+.ntr-col-inactive {
+  background: rgba(0,0,0,0.03);
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Active indicator dot */
+.ntr-col-selected-dot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Data rows */
+.ntr-cmp-row-new {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr 1fr;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 2px;
+  border-radius: 8px;
+  transition: background .12s ease;
+}
+.ntr-cmp-row-new:hover { background: rgba(0,0,0,0.03); }
+
+/* Nutrisi column */
+.ntr-cmp-row-new .ntr-col-nutrisi {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ntr-row-icon-sm  { font-size: 13px; line-height: 1; flex-shrink: 0; }
+.ntr-row-label-sm { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+
+/* Detected column */
+.ntr-cmp-row-new .ntr-col-detected {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  justify-content: center;
+}
+.ntr-val-actual {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ntr-val-unit { font-size: 10px; color: var(--text-muted); }
+
+/* Target columns (Besar / Kecil) */
+.ntr-col-besar,
+.ntr-col-kecil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 3px;
+  border-radius: 7px;
+  transition: opacity .15s ease;
+}
+.ntr-col-target-active {
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.07);
+}
+.ntr-col-target-dim { opacity: 0.35; }
+
+.ntr-val-target {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.ntr-pct-mini {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.ntr-pct-ok   { background: #dcfce7; color: #15803d; }
+.ntr-pct-over { background: #fee2e2; color: #b91c1c; }
+.ntr-pct-low  { background: #fef3c7; color: #92400e; }
+
