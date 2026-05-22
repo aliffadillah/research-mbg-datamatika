@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ScanSearch, Database, CalendarDays,
-  TrendingUp, FileText, Settings, LogOut
+  TrendingUp, FileText, BookOpen, Settings, LogOut
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: '/app/daily-menu', icon: CalendarDays, label: 'Daily Menu' },
   { to: '/app/prediction', icon: TrendingUp, label: 'AI Prediction' },
   { to: '/app/reports', icon: FileText, label: 'Reports' },
+  { to: '/app/akg', icon: BookOpen, label: 'AKG — Gizi MBG', badge: 'MBG' },
 ]
 
 export default function Sidebar() {

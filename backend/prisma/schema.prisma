@@ -54,6 +54,26 @@ model History {
   @@map("histories")
 }
 
+// ─── AKG References table ────────────────────────────────────────────────────
+// Angka Kebutuhan Gizi per kelompok umur — editable dari dashboard
+model AkgReference {
+  id         Int      @id @default(autoincrement())
+  group_name String
+  age        String
+  gender     String   @default("-")
+  weight     Float
+  height     Float
+  energy     Float
+  fat        Float
+  protein    Float
+  carbs      Float
+  fiber      Float
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("akg_references")
+}
+
 // ─── Users table ─────────────────────────────────────────────────────────────
 model User {
   id         String   @id @default(cuid())

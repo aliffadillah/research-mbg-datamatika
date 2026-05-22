@@ -1,173 +1,330 @@
-import React from 'react'
-import { Download, Calendar } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, X, Trash2, Loader2, AlertCircle, Search, RefreshCw, Pencil } from 'lucide-react'
 import './DailyMenu.css'
 
-const RINGS = [
-  { label:'Calories', value:'87%', meta:'695 / 800 kcal · ↓ 13% under target', offset:34, grad:'g1', colors:['#fbbf24','#ef4444'] },
-  { label:'Protein', value:'108%', meta:'34 / 31.5 g · ↑ above target ✓', offset:-22, grad:'g2', colors:['#22c55e','#16a34a'] },
-  { label:'Carbs', value:'78%', meta:'88 / 113 g · within range', offset:58, grad:'g3', colors:['#0891b2','#6366f1'] },
-  { label:'Fiber', value:'48%', meta:'6.4 / 13 g · ⚠ below target', offset:138, grad:'g4', colors:['#84cc16','#16a34a'] },
-]
-
-const SCHOOLS = [
-  { init:'SC', name:'SDN Cipinang 05', city:'Jakarta', det:248, pct:96 },
-  { init:'SS', name:'SMAN 2 Surabaya', city:'Surabaya', det:218, pct:97 },
-  { init:'SB', name:'SMPN 14 Bandung', city:'Bandung', det:224, pct:94 },
-  { init:'SM', name:'SDN Medan Helvetia', city:'Medan', det:184, pct:92 },
-  { init:'SP', name:'SDN Pondok Indah', city:'Jakarta', det:198, pct:88, warn:true },
-]
-
-const MEALS = [
-  { name:'Nasi · Ayam · Sayur · Tempe', school:'SDN Cipinang 05 · 11:48', conf:'96%', kcal:'682 kcal', nuts:['34g P','88g C','18g F'], cls:'' },
-  { name:'Nasi · Ikan · Bayam · Tahu', school:'SMPN 14 Bandung · 11:42', conf:'94%', kcal:'745 kcal', nuts:['38g P','94g C','19g F'], cls:'m2' },
-  { name:'Nasi · Ayam · Kacang · Buncis', school:'SMAN 2 Surabaya · 11:38', conf:'97%', kcal:'812 kcal', nuts:['42g P','98g C','22g F'], cls:'m3' },
-  { name:'Nasi · Telur · Sayur', school:'SDN Pondok Indah · 11:36', conf:'88%', kcal:'540 kcal', nuts:['26g P','68g C','14g F'], cls:'m4' },
-]
-
-const HEATMAP = {
-  rows: ['Calories','Protein','Carbs','Fat','Fiber'],
-  cols: ['Mon','Tue','Wed','Thu','Fri','Sat','Today'],
-  data: [
-    [92,96,98,102,93,90,87],
-    [108,102,110,104,108,101,108],
-    [82,85,90,88,81,79,78],
-    [91,95,88,90,94,86,84],
-    [42,48,62,52,46,44,48],
-  ]
+// ── Helpers ───────────────────────────────────────────────────────────
+function parseFoods(raw) {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === 'string') { try { return JSON.parse(raw) } catch { return [] } }
+  return []
 }
 
-const BARS = [
-  { day:'Mon', v:735, h:78 },
-  { day:'Tue', v:768, h:82 },
-  { day:'Wed', v:782, h:84 },
-  { day:'Thu', v:815, h:88 },
-  { day:'Fri', v:695, h:74, today:true },
-]
+const CAT_ICONS = { protein:'🥩', sayuran:'🥬', buah:'🍎', karbohidrat:'🍚', pelengkap:'🧂', snack:'🍪', minuman:'🥛', other:'🍽️' }
 
-function heatColor(v) {
-  if (v < 60) return 'hm-neg'
-  if (v < 80) return 'hm-l1'
-  if (v < 95) return 'hm-l2'
-  if (v <= 100) return 'hm-l3'
-  return 'hm-l4'
-}
-
+// ═══════════════════════════════════════════════════════════════════
 export default function DailyMenu() {
-  return (
-    <div className="dm-content">
-      <div className="page-head">
-        <div><h1>Daily Menu Monitoring</h1><p>What was served vs MBG target, by day and by school</p></div>
-        <div className="toolbar">
-          <button className="btn btn-outline btn-sm">Today</button>
-          <span className="dm-date"><Calendar size={14}/>Friday, 17 May 2026 ▾</span>
-          <span className="dm-sel">All schools (12) ▾</span>
-          <button className="btn btn-primary btn-sm"><Download size={14}/>Export day</button>
-        </div>
-      </div>
+  const [menus,   setMenus]   = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState('')
 
-      {/* TARGETS */}
-      <div className="card dm-targets">
-        <h3>Today's Nutrition Targets <span className="more">Porsi Besar · all schools</span></h3>
-        <div className="sub">Aggregate actual vs MBG target across 12 monitored schools</div>
-        <div className="targets-grid">
-          {RINGS.map((r, i) => (
-            <div className="ring-card" key={i}>
-              <div className="ring-wrap">
-                <svg viewBox="0 0 100 100" width="120" height="120">
-                  <circle cx="50" cy="50" r="42" stroke="var(--border-light)" strokeWidth="10" fill="none"/>
-                  <circle cx="50" cy="50" r="42" stroke={`url(#${r.grad})`} strokeWidth="10" fill="none" strokeLinecap="round" strokeDasharray="264" strokeDashoffset={r.offset}/>
-                  <defs><linearGradient id={r.grad} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={r.colors[0]}/><stop offset="1" stopColor={r.colors[1]}/></linearGradient></defs>
-                </svg>
-                <div className="ring-val"><div className="ring-v">{r.value}</div><div className="ring-l">{r.label}</div></div>
-              </div>
-              <div className="ring-nm">{r.label === 'Carbs' ? 'Carbohydrates' : r.label}</div>
-              <div className="ring-meta">{r.meta}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+  const [drawer,    setDrawer]    = useState(null)
+  const [form,      setForm]      = useState({ name: '', foods: [] })
+  const [foodInput, setFoodInput] = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [deleting,  setDeleting]  = useState(false)
+  const [formErr,   setFormErr]   = useState('')
 
-      {/* SCHOOLS */}
-      <div className="card dm-schools">
-        <h3>School Compliance Today <span className="more">12 schools</span></h3>
-        <div className="sub">% of MBG targets met across all 5 macros</div>
-        {SCHOOLS.map((s, i) => (
-          <div className="sch-row" key={i}>
-            <div className={`sch-av ${s.warn ? 'sch-warn' : ''}`}>{s.init}</div>
-            <div className="sch-info">
-              <div className="sch-nm">{s.name}</div>
-              <div className="sch-meta">{s.city} · {s.det} detections</div>
-              <div className="sch-bar"><i style={{ width:`${s.pct}%`, background: s.warn ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : undefined }}/></div>
-            </div>
-            <div className="sch-pct" style={s.warn ? { color:'#d97706' } : undefined}>{s.pct}%</div>
-          </div>
+  const [suggestions, setSuggestions] = useState([])
+  const [sugLoading,  setSugLoading]  = useState(false)
+  const [showSug,     setShowSug]     = useState(false)
+  const sugTimeout = useRef(null)
+  const inputRef   = useRef(null)
+
+  // ── Fetch ──────────────────────────────────────────────────────────
+  const fetchMenus = async () => {
+    setLoading(true); setError('')
+    try {
+      const res  = await fetch('/api/daily-menus')
+      const json = await res.json()
+      setMenus(json.data ?? [])
+    } catch { setError('Gagal memuat data. Pastikan backend berjalan.') }
+    finally  { setLoading(false) }
+  }
+  useEffect(() => { fetchMenus() }, [])
+
+  // ── Autocomplete ───────────────────────────────────────────────────
+  const onFoodInput = (val) => {
+    setFoodInput(val)
+    clearTimeout(sugTimeout.current)
+    if (!val.trim() || val.length < 2) { setSuggestions([]); return }
+    sugTimeout.current = setTimeout(async () => {
+      setSugLoading(true)
+      try {
+        const res  = await fetch(`/api/nutrition?search=${encodeURIComponent(val)}&limit=8`)
+        const json = await res.json()
+        setSuggestions((json.data ?? []).map(f => f.name))
+        setShowSug(true)
+      } catch { setSuggestions([]) }
+      finally  { setSugLoading(false) }
+    }, 280)
+  }
+
+  const addFood = (name) => {
+    const n = name.trim()
+    if (!n || form.foods.includes(n)) { setFoodInput(''); setSuggestions([]); setShowSug(false); return }
+    setForm(f => ({ ...f, foods: [...f.foods, n] }))
+    setFoodInput(''); setSuggestions([]); setShowSug(false)
+    inputRef.current?.focus()
+  }
+
+  const removeFood = (idx) => setForm(f => ({ ...f, foods: f.foods.filter((_, i) => i !== idx) }))
+
+  // ── Drawer helpers ─────────────────────────────────────────────────
+  const openAdd = () => { setForm({ name:'', foods:[] }); setFoodInput(''); setSuggestions([]); setFormErr(''); setDrawer('add') }
+  const openEdit = (m) => { setForm({ name: m.name ?? '', foods: parseFoods(m.foods) }); setFoodInput(''); setSuggestions([]); setFormErr(''); setDrawer(m) }
+
+  // ── Save ───────────────────────────────────────────────────────────
+  const onSave = async () => {
+    if (!form.name.trim())    { setFormErr('Nama menu wajib diisi.'); return }
+    if (!form.foods.length)   { setFormErr('Tambahkan minimal 1 item makanan.'); return }
+    setSaving(true); setFormErr('')
+    const isEdit = drawer && drawer !== 'add'
+    const url    = isEdit ? `/api/daily-menus/${drawer.id}` : '/api/daily-menus'
+    try {
+      const res = await fetch(url, {
+        method:  isEdit ? 'PATCH' : 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body:    JSON.stringify({ name: form.name.trim(), foods: form.foods }),
+      })
+      if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Gagal menyimpan') }
+      setDrawer(null); fetchMenus()
+    } catch (e) { setFormErr(e.message) }
+    finally  { setSaving(false) }
+  }
+
+  // ── Delete ─────────────────────────────────────────────────────────
+  const onDelete = async (id) => {
+    if (!window.confirm('Hapus menu ini?')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/daily-menus/${id}`, { method:'DELETE' })
+      if (!res.ok) throw new Error('Gagal menghapus')
+      setDrawer(null); fetchMenus()
+    } catch (e) { setFormErr(e.message) }
+    finally { setDeleting(false) }
+  }
+
+  // ── Nutrition pills for large_portion ─────────────────────────────
+  function NutPills({ p }) {
+    if (!p) return null
+    const pairs = [
+      { label:'Energi', val: p.energi ?? p.kalori ?? p.calories, unit:'kcal' },
+      { label:'Protein', val: p.protein, unit:'g' },
+      { label:'Karbo', val: p.karbohidrat ?? p.karbo ?? p.carbs, unit:'g' },
+      { label:'Lemak', val: p.lemak ?? p.fat, unit:'g' },
+      { label:'Serat', val: p.serat ?? p.fiber, unit:'g' },
+    ].filter(x => x.val != null)
+    if (!pairs.length) return null
+    return (
+      <div className="dm-nut-pills">
+        {pairs.map(x => (
+          <span className="dm-nut-pill" key={x.label}>
+            <b>{x.val}</b>{x.unit} {x.label}
+          </span>
         ))}
       </div>
+    )
+  }
 
-      {/* MEALS */}
-      <div className="card dm-meals">
-        <h3>Today's Meal Gallery <span className="more">8 of 124 →</span></h3>
-        <div className="sub">Latest detected meals across all monitored schools</div>
-        <div className="meals-grid">
-          {MEALS.map((m, i) => (
-            <div className="meal" key={i}>
-              <div className={`meal-img ${m.cls}`}>
-                <span className="meal-conf">{m.conf} conf</span>
-                <span className="meal-kcal">{m.kcal}</span>
+  // ═════════════════════════════════════════════════════════════════
+  return (
+    <div className="dm-page">
+
+      {/* ── HEADER ────────────────────────────────────────────────── */}
+      <div className="dm-header">
+        <div className="dm-header-left">
+          <div className="dm-header-icon">🍱</div>
+          <div>
+            <h1 className="dm-title">Menu Harian</h1>
+            <p className="dm-subtitle">Kelola set makanan untuk program MBG</p>
+            <div className="dm-header-badge">
+              <span>●</span> {menus.length} menu tersimpan
+            </div>
+          </div>
+        </div>
+        <div className="dm-header-actions">
+          <button className="btn btn-outline btn-sm" onClick={fetchMenus}><RefreshCw size={14}/></button>
+          <button className="btn btn-primary btn-sm" onClick={openAdd}><Plus size={14}/> Tambah Menu</button>
+        </div>
+      </div>
+
+      {/* ── ERROR ─────────────────────────────────────────────────── */}
+      {error && (
+        <div className="dm-alert">
+          <AlertCircle size={14}/> {error}
+          <button onClick={fetchMenus}>Coba lagi</button>
+        </div>
+      )}
+
+      {/* ── TABLE CARD ────────────────────────────────────────────── */}
+      <div className="dm-table-card">
+
+        {loading ? (
+          <div className="dm-state-center">
+            <Loader2 size={22} className="dm-spin"/> Memuat menu…
+          </div>
+        ) : menus.length === 0 ? (
+          <div className="dm-state-center dm-empty">
+            <div className="dm-empty-icon">🍱</div>
+            <p>Belum ada menu. Klik <strong>Tambah Menu</strong> untuk memulai.</p>
+          </div>
+        ) : (
+          <table className="dm-tbl">
+            <thead>
+              <tr>
+                <th style={{ width:48 }}>#</th>
+                <th>Nama Menu</th>
+                <th>Item Makanan</th>
+                <th>Porsi Besar</th>
+                <th style={{ width:96, textAlign:'right' }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {menus.map((m, i) => {
+                const foods = parseFoods(m.foods)
+                return (
+                  <tr key={m.id} className="dm-row">
+                    <td className="dm-idx"><div className="dm-idx-bubble">{i + 1}</div></td>
+                    <td>
+                      <div className="dm-menu-name">{m.name}</div>
+                      <div className="dm-menu-count">{foods.length} item</div>
+                    </td>
+                    <td>
+                      <div className="dm-food-chips">
+                        {foods.slice(0, 5).map((f, j) => (
+                          <span className="dm-chip" key={j}>{f}</span>
+                        ))}
+                        {foods.length > 5 && (
+                          <span className="dm-chip dm-chip-more">+{foods.length - 5}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td><NutPills p={m.large_portion}/></td>
+                    <td>
+                      <div className="dm-row-actions">
+                        <button className="dm-action-btn" title="Edit" onClick={() => openEdit(m)}>
+                          <Pencil size={13}/>
+                        </button>
+                        <button className="dm-action-btn dm-action-del" title="Hapus" onClick={() => onDelete(m.id)}>
+                          <Trash2 size={13}/>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+
+        <div className="dm-table-footer">
+          {menus.length} menu · data dari Supabase
+        </div>
+      </div>
+
+      {/* ── DRAWER ────────────────────────────────────────────────── */}
+      {drawer && (
+        <>
+          <div className="dm-overlay" onClick={() => setDrawer(null)}/>
+          <aside className="dm-drawer">
+
+            <div className="dm-drawer-head">
+              <div>
+                <h2>{drawer === 'add' ? 'Tambah Menu Harian' : 'Edit Menu'}</h2>
+                <div className="dm-drawer-head-sub">{drawer === 'add' ? 'Isi detail menu baru' : `Editing: ${drawer.name ?? ''}`}</div>
               </div>
-              <div className="meal-body">
-                <div className="meal-nm">{m.name}</div>
-                <div className="meal-sch">{m.school}</div>
-                <div className="meal-nuts">{m.nuts.map((n, j) => <span key={j} className="meal-nut">{n}</span>)}</div>
+              <button className="dm-drawer-close" onClick={() => setDrawer(null)}><X size={16}/></button>
+            </div>
+
+            <div className="dm-drawer-body">
+
+              {formErr && (
+                <div className="dm-form-err"><AlertCircle size={13}/> {formErr}</div>
+              )}
+
+              {/* Nama */}
+              <div className="dm-form-group">
+                <label className="dm-label">Nama Menu <span>*</span></label>
+                <input
+                  className="dm-input"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Contoh: Menu Nasi Ayam Sayur"
+                />
+              </div>
+
+              {/* Food items */}
+              <div className="dm-form-group">
+                <label className="dm-label">
+                  Item Makanan <span>*</span>
+                  <em>{form.foods.length} item</em>
+                </label>
+
+                {/* Selected tags */}
+                {form.foods.length > 0 && (
+                  <div className="dm-sel-list">
+                    {form.foods.map((f, i) => (
+                      <span className="dm-sel-tag" key={i}>
+                        {f}
+                        <button onClick={() => removeFood(i)}><X size={10}/></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search input */}
+                <div className="dm-search-wrap">
+                  <Search size={13} className="dm-search-ic"/>
+                  {sugLoading && <Loader2 size={13} className="dm-spin dm-search-loader"/>}
+                  <input
+                    ref={inputRef}
+                    className="dm-input dm-search-input"
+                    value={foodInput}
+                    onChange={e => onFoodInput(e.target.value)}
+                    onFocus={() => suggestions.length && setShowSug(true)}
+                    onBlur={() => setTimeout(() => setShowSug(false), 150)}
+                    onKeyDown={e => e.key === 'Enter' && addFood(foodInput)}
+                    placeholder="Cari dari database atau ketik nama makanan…"
+                  />
+                </div>
+
+                {/* Suggestions */}
+                {showSug && suggestions.length > 0 && (
+                  <div className="dm-suggestions">
+                    {suggestions.map((s, i) => (
+                      <button key={i} className="dm-sug-item" onMouseDown={() => addFood(s)}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <p className="dm-hint">Tekan Enter atau pilih dari saran. Nilai nutrisi tidak perlu diisi.</p>
+              </div>
+
+            </div>{/* end dm-drawer-body */}
+
+            {/* Actions */}
+            <div className="dm-drawer-actions">
+              {drawer !== 'add' && (
+                <button className="dm-delete-btn" onClick={() => onDelete(drawer.id)} disabled={deleting}>
+                  {deleting ? <Loader2 size={13} className="dm-spin"/> : <Trash2 size={13}/>}
+                  Hapus
+                </button>
+              )}
+              <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
+                <button className="btn btn-outline btn-sm" onClick={() => setDrawer(null)}>Batal</button>
+                <button className="btn btn-primary btn-sm" onClick={onSave} disabled={saving}>
+                  {saving && <Loader2 size={13} className="dm-spin"/>}
+                  {saving ? 'Menyimpan…' : drawer === 'add' ? 'Simpan' : 'Simpan Perubahan'}
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* HEATMAP */}
-      <div className="card dm-heatmap">
-        <h3>Weekly Nutrition Heatmap <span className="more">Last 7 days · % of target ▾</span></h3>
-        <div className="sub">Each cell = aggregate compliance of all schools for that macro on that day</div>
-        <div className="hm-grid">
-          <span/>
-          {HEATMAP.cols.map(c => <span className="hm-head" key={c}>{c}</span>)}
-          {HEATMAP.rows.map((row, ri) => (
-            <React.Fragment key={ri}>
-              <span className="hm-lbl">{row}</span>
-              {HEATMAP.data[ri].map((v, ci) => (
-                <span className={`hm-cell ${heatColor(v)}`} key={`${ri}${ci}`}>{v}</span>
-              ))}
-            </React.Fragment>
-          ))}
-        </div>
-        <div className="hm-legend">
-          % of MBG target
-          <i style={{ background:'#fee2e2' }}/>&lt;60
-          <i style={{ background:'#dcfce7' }}/>60–80
-          <i style={{ background:'#86efac' }}/>80–95
-          <i style={{ background:'#22c55e' }}/>95–100
-          <i style={{ background:'#16a34a' }}/>100+
-        </div>
-      </div>
-
-      {/* WEEKLY BARS */}
-      <div className="card dm-trend">
-        <h3>Weekly Calories <span className="more">All schools ▾</span></h3>
-        <div className="sub">Avg kcal per student per day</div>
-        <div className="bars-wrap">
-          {BARS.map((b, i) => (
-            <div className={`bar-col ${b.today ? 'bar-today' : ''}`} key={i}>
-              <i style={{ height:`${b.h}%` }} data-v={b.v}/>
-              <span className="bar-d">{b.day}</span>
-            </div>
-          ))}
-        </div>
-        <div className="bars-footer">
-          <div><div className="bars-avg">759 <span>avg kcal</span></div></div>
-          <div style={{ textAlign:'right' }}><div style={{ fontSize:11, color:'var(--text-muted)' }}>vs last week</div><div style={{ fontWeight:700, color:'var(--primary)' }}>↑ 4.2%</div></div>
-        </div>
-      </div>
+          </aside>
+        </>
+      )}
     </div>
   )
 }

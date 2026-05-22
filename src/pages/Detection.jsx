@@ -104,13 +104,13 @@ export default function Detection() {
             return {
               ...det,
               nutrition_found: nutData.found ?? false,
-              db_name: nut.name ?? det.class_name,   
+              db_name: nut.name ?? det.class_name,
               nutrition: {
                 calories: round1(nut.calories ?? 0),
-                protein:  round1(nut.protein  ?? 0),
-                carbs:    round1(nut.carbs    ?? 0),
-                fat:      round1(nut.fat      ?? 0),
-                fiber:    round1(nut.fiber    ?? 0),
+                protein: round1(nut.protein ?? 0),
+                carbs: round1(nut.carbs ?? 0),
+                fat: round1(nut.fat ?? 0),
+                fiber: round1(nut.fiber ?? 0),
               },
               category: nut.category ?? 'other',
             }
@@ -377,7 +377,7 @@ export default function Detection() {
         </div>
       )}
 
-      {/* ── NUTRITION INFO (kanan saat ada hasil) ─────────────────── */}
+      {/* NUTRITION INFO (kanan saat ada hasil) */}
       {hasResult && (
         <div className="card det-nutrition-right">
           {/* Detected items list — di atas Nutrition Summary */}

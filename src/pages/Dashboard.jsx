@@ -1,38 +1,225 @@
+import { useState, useEffect } from 'react'
 import './Dashboard.css'
 
-const KPI_DATA = [
-  { icon:'scan', label:'Total Detections (today)', value:'2,847', delta:'↑ 12.4%', up:true, color:'k1', bars:[30,45,38,62,50,75,88] },
-  { icon:'fire', label:'Total Calories Monitored', value:'1.94M', unit:'kcal', delta:'↑ 8.2%', up:true, color:'k2', bars:[48,55,42,68,72,60,82] },
-  { icon:'heart', label:'Avg Protein per Meal', value:'28.4', unit:'g/student', delta:'↑ 3.1%', up:true, color:'k3', bars:[55,60,58,70,65,78,75] },
-  { icon:'check', label:'MBG Compliance Rate', value:'94.2', unit:'%', delta:'↓ 1.8%', up:false, color:'k4', bars:[72,80,78,85,82,88,75] },
+// ── Helpers ────────────────────────────────────────────────────────
+const round1 = (n) => Math.round((n ?? 0) * 10) / 10
+const fmtNum = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : String(Math.round(n)))
+
+function parseJSON(str, fallback) {
+  if (!str) return fallback
+  if (typeof str === 'object') return str
+  try { return JSON.parse(str) } catch { return fallback }
+}
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
+  if (diff < 60) return `${Math.round(diff)}s ago`
+  if (diff < 3600) return `${Math.round(diff / 60)} min ago`
+  if (diff < 86400) return `${Math.round(diff / 3600)}h ago`
+  return `${Math.round(diff / 86400)}d ago`
+}
+
+const THUMB_COLORS = [
+  'linear-gradient(135deg,#fde68a,#d97706)',
+  'linear-gradient(135deg,#bbf7d0,#16a34a)',
+  'linear-gradient(135deg,#a5f3fc,#0891b2)',
+  'linear-gradient(135deg,#fecaca,#ef4444)',
+  'linear-gradient(135deg,#ddd6fe,#7c3aed)',
 ]
 
-const TABLE_DATA = [
-  { school:'SDN Cipinang 05', file:'tray-2847.jpg', city:'Jakarta', time:'2 min ago', items:'4 items · 682 kcal', conf:96, status:'Compliant', bg:'linear-gradient(135deg,#fde68a,#d97706)' },
-  { school:'SMPN 14 Bandung', file:'tray-2846.jpg', city:'Bandung', time:'5 min ago', items:'5 items · 745 kcal', conf:94, status:'Compliant', bg:'linear-gradient(135deg,#bbf7d0,#16a34a)' },
-  { school:'SDN Pondok Indah', file:'tray-2845.jpg', city:'Jakarta', time:'8 min ago', items:'3 items · 540 kcal', conf:88, status:'Below target', bg:'linear-gradient(135deg,#fde68a,#d97706)', warn:true },
-  { school:'SMAN 2 Surabaya', file:'tray-2844.jpg', city:'Surabaya', time:'12 min ago', items:'5 items · 812 kcal', conf:97, status:'Compliant', bg:'linear-gradient(135deg,#a5f3fc,#0891b2)' },
-  { school:'SDN Medan Helvetia', file:'tray-2843.jpg', city:'Medan', time:'16 min ago', items:'4 items · 698 kcal', conf:92, status:'Compliant', bg:'linear-gradient(135deg,#fecaca,#ef4444)' },
-]
+const DONUT_COLORS = ['#16a34a', '#f59e0b', '#0891b2', '#a78bfa']
+const DONUT_LABELS = ['Carbohydrates', 'Protein', 'Fat', 'Fiber']
+const DONUT_KEYS   = ['carbs', 'protein', 'fat', 'fiber']
 
-const SCHOOLS = [
-  { init:'SC', name:'SDN Cipinang 05', city:'Jakarta', detections:248, pct:96 },
-  { init:'SB', name:'SMPN 14 Bandung', city:'Bandung', detections:224, pct:94 },
-  { init:'SS', name:'SMAN 2 Surabaya', city:'Surabaya', detections:218, pct:97 },
-  { init:'SP', name:'SDN Pondok Indah', city:'Jakarta', detections:198, pct:88 },
-  { init:'SM', name:'SDN Medan Helvetia', city:'Medan', detections:184, pct:92 },
-]
+// ── Spark bar sparkline ────────────────────────────────────────────
+function Spark({ vals }) {
+  if (!vals?.length) return null
+  const max = Math.max(...vals, 1)
+  return (
+    <div className="spark">
+      {vals.map((v, i) => <i key={i} style={{ height: `${Math.round((v / max) * 100)}%` }} />)}
+    </div>
+  )
+}
 
-const DONUT = [
-  { label:'Carbohydrates', pct:'40%', val:'68g', color:'#16a34a' },
-  { label:'Protein', pct:'31%', val:'28g', color:'#f59e0b' },
-  { label:'Fat', pct:'19%', val:'14g', color:'#0891b2' },
-  { label:'Fiber & other', pct:'10%', val:'8g', color:'#a78bfa' },
-]
+// ── Donut chart ────────────────────────────────────────────────────
+function DonutChart({ totals }) {
+  const vals = DONUT_KEYS.map(k => totals[k] ?? 0)
+  const sum  = vals.reduce((a, b) => a + b, 0) || 1
+  const circumference = 2 * Math.PI * 40  // r=40
+  let offset = 0
+  const slices = vals.map((v, i) => {
+    const frac = v / sum
+    const dash = frac * circumference
+    const slice = { dash, offset, color: DONUT_COLORS[i] }
+    offset += dash
+    return slice
+  })
 
+  return (
+    <svg viewBox="0 0 100 100" width="170" height="170">
+      {slices.map((s, i) => (
+        <circle key={i} cx="50" cy="50" r="40" fill="none"
+          stroke={s.color} strokeWidth="14"
+          strokeDasharray={`${s.dash} ${circumference - s.dash}`}
+          strokeDashoffset={-s.offset}
+        />
+      ))}
+    </svg>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════
 export default function Dashboard() {
+  const [histories, setHistories]     = useState([])
+  const [categories, setCategories]   = useState([])
+  const [aiStatus, setAiStatus]       = useState(null)
+  const [loading, setLoading]         = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [histRes, catRes, aiRes] = await Promise.allSettled([
+          fetch('/api/history?limit=50').then(r => r.json()),
+          fetch('/api/nutrition/categories').then(r => r.json()),
+          fetch('/api/health').then(r => r.json()),
+        ])
+        if (histRes.status === 'fulfilled') setHistories(histRes.value.data ?? [])
+        if (catRes.status  === 'fulfilled') setCategories(Array.isArray(catRes.value) ? catRes.value : [])
+        if (aiRes.status   === 'fulfilled') setAiStatus(aiRes.value)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+    const interval = setInterval(load, 30_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // ── Derived KPI values ──────────────────────────────────────────
+  const totalDetections = histories.reduce((acc, h) => {
+    const dets = parseJSON(h.detections, [])
+    return acc + (Array.isArray(dets) ? dets.length : 0)
+  }, 0)
+
+  const totalCalories = histories.reduce((acc, h) => {
+    const ns = parseJSON(h.nutrition_summary, {})
+    return acc + (ns.calories ?? 0)
+  }, 0)
+
+  const avgProtein = histories.length
+    ? round1(histories.reduce((acc, h) => {
+        const ns = parseJSON(h.nutrition_summary, {})
+        return acc + (ns.protein ?? 0)
+      }, 0) / histories.length)
+    : 0
+
+  const compliantCount = histories.filter(h => {
+    const c = parseJSON(h.mbg_compliance, {})
+    return c.compliant === true
+  }).length
+  const complianceRate = histories.length ? round1((compliantCount / histories.length) * 100) : 0
+
+  // ── Spark values: last 7 records (item count) ───────────────────
+  const last7 = histories.slice(0, 7).reverse()
+  const spark1 = last7.map(h => parseJSON(h.detections, []).length || 1)
+  const spark2 = last7.map(h => parseJSON(h.nutrition_summary, {}).calories || 0)
+  const spark3 = last7.map(h => parseJSON(h.nutrition_summary, {}).protein || 0)
+  const spark4 = last7.map(h => {
+    const c = parseJSON(h.mbg_compliance, {})
+    return c.compliant ? 100 : 50
+  })
+
+  const KPI_DATA = [
+    { icon:'scan', label:'Total Item Terdeteksi', value: fmtNum(totalDetections), color:'k1', bars: spark1, up: true, delta: `${histories.length} sesi` },
+    { icon:'fire', label:'Total Kalori Dipantau', value: fmtNum(totalCalories), unit:'kcal', color:'k2', bars: spark2, up: true, delta: `${histories.length} foto` },
+    { icon:'heart', label:'Rata-rata Protein/Makan', value: String(avgProtein), unit:'g', color:'k3', bars: spark3, up: avgProtein >= 20, delta: avgProtein >= 20 ? '≥ target' : '< target' },
+    { icon:'check', label:'Tingkat Kepatuhan MBG', value: String(complianceRate), unit:'%', color:'k4', bars: spark4, up: complianceRate >= 80, delta: `${compliantCount}/${histories.length} sesi` },
+  ]
+
+  // ── Nutrition totals for donut ──────────────────────────────────
+  const nutTotals = histories.reduce((acc, h) => {
+    const ns = parseJSON(h.nutrition_summary, {})
+    return {
+      carbs:   acc.carbs   + (ns.carbs   ?? 0),
+      protein: acc.protein + (ns.protein ?? 0),
+      fat:     acc.fat     + (ns.fat     ?? 0),
+      fiber:   acc.fiber   + (ns.fiber   ?? 0),
+    }
+  }, { carbs: 0, protein: 0, fat: 0, fiber: 0 })
+
+  const avgKcalPerMeal = histories.length
+    ? Math.round(totalCalories / histories.length)
+    : 0
+
+  // ── Donut legend values ─────────────────────────────────────────
+  const nutSum = (nutTotals.carbs + nutTotals.protein + nutTotals.fat + nutTotals.fiber) || 1
+  const DONUT = DONUT_KEYS.map((k, i) => ({
+    label: DONUT_LABELS[i],
+    color: DONUT_COLORS[i],
+    pct: `${Math.round((nutTotals[k] / nutSum) * 100)}%`,
+    val: `${Math.round(nutTotals[k] / (histories.length || 1))}g`,
+  }))
+
+  // ── Recent uploads table ────────────────────────────────────────
+  const recentRows = histories.slice(0, 5).map((h, i) => {
+    const dets = parseJSON(h.detections, [])
+    const ns   = parseJSON(h.nutrition_summary, {})
+    const comp = parseJSON(h.mbg_compliance, {})
+    const avgConf = dets.length
+      ? Math.round(dets.reduce((a, d) => a + (d.confidence ?? 0), 0) / dets.length * 100)
+      : 0
+    return {
+      filename: h.filename ?? 'unknown.jpg',
+      time: timeAgo(h.created_at),
+      items: `${dets.length} item · ${Math.round(ns.calories ?? 0)} kcal`,
+      conf: avgConf,
+      compliant: comp.compliant === true,
+      bg: THUMB_COLORS[i % THUMB_COLORS.length],
+      portion: comp.portion_label ?? h.portion ?? '-',
+    }
+  })
+
+  // ── Confidence distribution ─────────────────────────────────────
+  const allConf = histories.flatMap(h => parseJSON(h.detections, []).map(d => (d.confidence ?? 0) * 100))
+  const confTotal = allConf.length || 1
+  const confBands = [
+    { label: '≥95%', min: 95, max: 101, color: 'linear-gradient(135deg,#16a34a,#15803d)', legend: 'High confidence (auto-approved)', lc: '#15803d' },
+    { label: '90–95%', min: 90, max: 95, color: 'linear-gradient(135deg,#84cc16,#65a30d)', legend: 'Good', lc: '#65a30d' },
+    { label: '80–90%', min: 80, max: 90, color: 'linear-gradient(135deg,#f59e0b,#d97706)', legend: 'Review recommended', lc: '#d97706' },
+    { label: '<80%',  min: 0,  max: 80, color: 'linear-gradient(135deg,#ef4444,#b91c1c)', legend: 'Manual review required', lc: '#b91c1c' },
+  ].map(b => {
+    const cnt = allConf.filter(c => c >= b.min && c < b.max).length
+    const pct = Math.round((cnt / confTotal) * 100)
+    return { ...b, pct, cnt }
+  })
+
+  // ── AI Status ──────────────────────────────────────────────────
+  const aiOnline = aiStatus?.status === 'ok'
+  const avgConfAll = allConf.length
+    ? round1(allConf.reduce((a, b) => a + b, 0) / allConf.length)
+    : 0
+
+  // gauge offset: circumference=503, full=503, so offset = 503*(1-frac)
+  const gaugeOffset = Math.round(503 * (1 - avgConfAll / 100))
+
+  // ── Category top list ──────────────────────────────────────────
+  const topCats = categories.slice(0, 5)
+  const maxCat  = topCats[0]?.count || 1
+
+  if (loading) {
+    return (
+      <div className="dash-content dash-loading">
+        <div className="dash-spinner" />
+        <p>Memuat data dashboard…</p>
+      </div>
+    )
+  }
+
+  // ════════════════════════════════════════════════════════════════
   return (
     <div className="dash-content">
+
       {/* KPI ROW */}
       {KPI_DATA.map((k, i) => (
         <div className="card kpi" key={i}>
@@ -47,162 +234,152 @@ export default function Dashboard() {
           </div>
           <div className="kpi-val">{k.value}{k.unit && <span className="kpi-u">{k.unit}</span>}</div>
           <div className="kpi-lbl">{k.label}</div>
-          <div className="spark">{k.bars.map((h, j) => <i key={j} style={{ height:`${h}%` }}/>)}</div>
+          <Spark vals={k.bars} />
         </div>
       ))}
 
-      {/* PROTEIN TREND */}
-      <div className="card c-area">
-        <h3>Protein Intake Trend <span className="more">Last 30 days ▾</span></h3>
-        <div className="sub">Aggregated grams per student per day across all monitored schools</div>
-        <div className="legend">
-          <span><i style={{ background:'#16a34a' }}/>Actual</span>
-          <span><i style={{ background:'#0891b2' }}/>MBG Target</span>
-          <span><i style={{ background:'#cbd5e1' }}/>Last period</span>
-        </div>
-        <div className="chart-area">
-          <svg viewBox="0 0 600 240" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="ga" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#16a34a" stopOpacity="0.35"/>
-                <stop offset="100%" stopColor="#16a34a" stopOpacity="0"/>
-              </linearGradient>
-            </defs>
-            <path d="M0,180 C40,170 80,140 120,150 C160,160 200,120 240,100 C280,80 320,110 360,90 C400,70 440,60 480,55 C520,50 560,40 600,45 L600,240 L0,240 Z" fill="url(#ga)"/>
-            <path d="M0,180 C40,170 80,140 120,150 C160,160 200,120 240,100 C280,80 320,110 360,90 C400,70 440,60 480,55 C520,50 560,40 600,45" stroke="#16a34a" strokeWidth="2.5" fill="none"/>
-            <path d="M0,130 L600,130" stroke="#0891b2" strokeWidth="1.5" strokeDasharray="4 4" fill="none" opacity="0.7"/>
-            <path d="M0,200 C40,195 80,180 120,185 C160,190 200,170 240,160 C280,150 320,165 360,155 C400,145 440,140 480,135 C520,130 560,125 600,128" stroke="#cbd5e1" strokeWidth="1.5" fill="none" strokeDasharray="3 3"/>
-            <g fontSize="9" fill="#94a3b8" fontFamily="Inter">
-              <text x="0" y="234">May 1</text><text x="120" y="234">May 8</text><text x="240" y="234">May 15</text><text x="360" y="234">May 22</text><text x="480" y="234">May 29</text>
-            </g>
-            <circle cx="480" cy="55" r="5" fill="#16a34a" stroke="#fff" strokeWidth="2"/>
-            <g transform="translate(420,15)"><rect width="120" height="34" rx="6" fill="#0f172a"/><text x="10" y="14" fontSize="10" fill="#94a3b8">May 29 · Protein</text><text x="10" y="28" fontSize="13" fontWeight="700" fill="#fff">32.4g · ↑ above target</text></g>
-          </svg>
-        </div>
+      {/* RECENT UPLOADS TABLE */}
+      <div className="card c-table">
+        <h3>Deteksi Terbaru <span className="more">{histories.length} total →</span></h3>
+        <div className="sub">5 sesi deteksi terakhir dari database</div>
+        {recentRows.length === 0 ? (
+          <div className="dash-empty">Belum ada data deteksi. Upload foto di halaman Deteksi.</div>
+        ) : (
+          <table className="tbl">
+            <thead><tr><th>File / Porsi</th><th>Waktu</th><th>Item terdeteksi</th><th>Avg confidence</th><th>Status</th></tr></thead>
+            <tbody>
+              {recentRows.map((r, i) => (
+                <tr key={i}>
+                  <td>
+                    <div style={{ display:'flex', alignItems:'center' }}>
+                      <span className="tbl-thumb" style={{ background: r.bg }} />
+                      <div>
+                        <div className="tbl-nm">{r.filename}</div>
+                        <div className="tbl-meta">{r.portion}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{r.time}</td>
+                  <td>{r.items}</td>
+                  <td>
+                    <div className="cbar">
+                      <div className="track"><div className="fill" style={{ width:`${r.conf}%` }}/></div>
+                      <span className="val">{r.conf}%</span>
+                    </div>
+                  </td>
+                  <td><span className={`pill ${r.compliant ? 'pill-success' : 'pill-warning'}`}>{r.compliant ? 'Compliant' : 'Below target'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* TOP SCHOOLS (diganti: Top Food Categories) */}
+      <div className="card c-schools">
+        <h3>Kategori Makanan Teratas <span className="more">▾</span></h3>
+        <div className="sub">Berdasarkan data nutrisi di database</div>
+        {topCats.length === 0 ? (
+          <div className="dash-empty">Tidak ada data kategori.</div>
+        ) : topCats.map((s, i) => (
+          <div className="sch-row" key={i}>
+            <div className="sch-av" style={{ background: `hsl(${i * 55 + 150},60%,88%)`, color: `hsl(${i * 55 + 150},60%,30%)` }}>
+              {s.category?.slice(0, 2).toUpperCase() ?? '??'}
+            </div>
+            <div className="sch-info">
+              <div className="sch-nm">{s.category ?? 'Unknown'}</div>
+              <div className="sch-meta">{s.count} item dalam database</div>
+              <div className="sch-bar"><i style={{ width:`${Math.round((s.count / maxCat) * 100)}%` }}/></div>
+            </div>
+            <div className="sch-pct">{s.count}</div>
+          </div>
+        ))}
       </div>
 
       {/* AI STATUS */}
       <div className="card c-ai">
-        <h3>Real-time AI Status</h3>
-        <div className="sub">Inference pipeline health · last 60s</div>
+        <h3>Status AI Real-time</h3>
+        <div className="sub">Kesehatan pipeline inferensi · auto-refresh 30s</div>
         <div className="gauge">
           <svg viewBox="0 0 200 200">
             <circle cx="100" cy="100" r="80" stroke="rgba(255,255,255,0.10)" strokeWidth="14" fill="none"/>
-            <circle cx="100" cy="100" r="80" stroke="url(#gg)" strokeWidth="14" fill="none" strokeLinecap="round" strokeDasharray="503" strokeDashoffset="35" transform="rotate(-90 100 100)"/>
+            <circle cx="100" cy="100" r="80" stroke="url(#gg)" strokeWidth="14" fill="none"
+              strokeLinecap="round" strokeDasharray="503"
+              strokeDashoffset={allConf.length ? gaugeOffset : 503}
+              transform="rotate(-90 100 100)"/>
             <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#bbf7d0"/><stop offset="100%" stopColor="#67e8f9"/></linearGradient></defs>
           </svg>
-          <div className="gauge-val"><div className="gauge-v">95.3%</div><div className="gauge-l">Avg confidence</div></div>
+          <div className="gauge-val">
+            <div className="gauge-v">{allConf.length ? `${round1(avgConfAll)}%` : '—'}</div>
+            <div className="gauge-l">Avg confidence</div>
+          </div>
         </div>
-        {['RT-DETR · v2.1','LSTM Forecaster','Image preprocessor'].map((m,i) => (
+        {[
+          { name: 'RT-DETR · v2.1 (Menu)', on: aiOnline },
+          { name: 'Tray Detector (Stage 1)', on: aiOnline },
+          { name: 'Node.js Backend (DB)', on: true },
+        ].map((m, i) => (
           <div className="model-row" key={i}>
-            <span className="model-nm">{m}</span>
-            <span className="model-st"><i/>Operational</span>
+            <span className="model-nm">{m.name}</span>
+            <span className="model-st" style={{ color: m.on ? '#bbf7d0' : '#fca5a5' }}>
+              <i style={{ background: m.on ? '#22c55e' : '#ef4444', boxShadow: m.on ? '0 0 0 4px rgba(34,197,94,0.20)' : '0 0 0 4px rgba(239,68,68,0.20)' }}/>
+              {m.on ? 'Operational' : 'Offline'}
+            </span>
           </div>
         ))}
       </div>
 
-      {/* CARB TRENDS */}
-      <div className="card c-line">
-        <h3>Carbohydrate Trends <span className="more">Weekly ▾</span></h3>
-        <div className="sub">Grams per student · target vs actual vs LSTM forecast</div>
-        <div className="legend">
-          <span><i style={{ background:'#16a34a' }}/>Actual</span>
-          <span><i style={{ background:'#0891b2' }}/>Target</span>
-          <span><i style={{ background:'#a78bfa' }}/>Forecast</span>
-        </div>
-        <div className="chart-line">
-          <svg viewBox="0 0 600 200" preserveAspectRatio="none">
-            <g stroke="#f1f5f9" strokeWidth="1"><line x1="0" y1="50" x2="600" y2="50"/><line x1="0" y1="100" x2="600" y2="100"/><line x1="0" y1="150" x2="600" y2="150"/></g>
-            <polyline points="0,140 100,120 200,130 300,110 400,90 500,100 600,85" stroke="#16a34a" strokeWidth="2.5" fill="none"/>
-            <polyline points="0,100 600,100" stroke="#0891b2" strokeWidth="1.5" strokeDasharray="4 4" fill="none"/>
-            <polyline points="400,90 500,80 600,70" stroke="#a78bfa" strokeWidth="2.5" strokeDasharray="5 3" fill="none"/>
-            <g><circle cx="0" cy="140" r="3" fill="#16a34a"/><circle cx="100" cy="120" r="3" fill="#16a34a"/><circle cx="200" cy="130" r="3" fill="#16a34a"/><circle cx="300" cy="110" r="3" fill="#16a34a"/><circle cx="400" cy="90" r="3" fill="#16a34a"/></g>
-            <g fontSize="9" fill="#94a3b8" fontFamily="Inter"><text x="0" y="195">W1</text><text x="100" y="195">W2</text><text x="200" y="195">W3</text><text x="300" y="195">W4</text><text x="400" y="195">W5</text><text x="500" y="195">W6</text><text x="585" y="195">W7</text></g>
-          </svg>
-        </div>
-      </div>
-
-      {/* DONUT */}
+      {/* NUTRITION BREAKDOWN DONUT */}
       <div className="card c-donut">
-        <h3>Nutrition Breakdown <span className="more">Today ▾</span></h3>
-        <div className="sub">Macronutrient composition of all detected meals</div>
-        <div className="donut-wrap">
-          <div className="donut">
-            <svg viewBox="0 0 100 100" width="170" height="170">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#16a34a" strokeWidth="14" strokeDasharray="100 251" strokeDashoffset="0"/>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" strokeWidth="14" strokeDasharray="78 251" strokeDashoffset="-100"/>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#0891b2" strokeWidth="14" strokeDasharray="48 251" strokeDashoffset="-178"/>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#a78bfa" strokeWidth="14" strokeDasharray="25 251" strokeDashoffset="-226"/>
-            </svg>
-            <div className="donut-center"><div className="donut-v">682</div><div className="donut-l">kcal/meal</div></div>
-          </div>
-          <ul className="donut-leg">
-            {DONUT.map((d, i) => (
-              <li key={i}><span className="d-nm"><i style={{ background:d.color }}/>{d.label}</span><span className="d-val">{d.pct} · {d.val}</span></li>
-            ))}
-          </ul>
-        </div>
-      </div>
-
-      {/* RECENT UPLOADS TABLE */}
-      <div className="card c-table">
-        <h3>Recent Uploads <span className="more">View all →</span></h3>
-        <div className="sub">Latest 5 detection results streamed from monitored schools</div>
-        <table className="tbl">
-          <thead><tr><th>School / Image</th><th>Time</th><th>Items detected</th><th>Avg confidence</th><th>Status</th></tr></thead>
-          <tbody>
-            {TABLE_DATA.map((r, i) => (
-              <tr key={i}>
-                <td>
-                  <div style={{ display:'flex', alignItems:'center' }}>
-                    <span className="tbl-thumb" style={{ background:r.bg }}/>
-                    <div><div className="tbl-nm">{r.school}</div><div className="tbl-meta">{r.file} · {r.city}</div></div>
-                  </div>
-                </td>
-                <td>{r.time}</td>
-                <td>{r.items}</td>
-                <td><div className="cbar"><div className="track"><div className="fill" style={{ width:`${r.conf}%` }}/></div><span className="val">{r.conf}%</span></div></td>
-                <td><span className={`pill ${r.warn ? 'pill-warning' : 'pill-success'}`}>{r.status}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* TOP SCHOOLS */}
-      <div className="card c-schools">
-        <h3>Top School Activity <span className="more">▾</span></h3>
-        <div className="sub">Most active monitored schools today</div>
-        {SCHOOLS.map((s, i) => (
-          <div className="sch-row" key={i}>
-            <div className="sch-av">{s.init}</div>
-            <div className="sch-info">
-              <div className="sch-nm">{s.name}</div>
-              <div className="sch-meta">{s.city} · {s.detections} detections</div>
-              <div className="sch-bar"><i style={{ width:`${s.pct}%` }}/></div>
+        <h3>Breakdown Nutrisi <span className="more">Semua sesi ▾</span></h3>
+        <div className="sub">Komposisi makronutrien dari seluruh deteksi</div>
+        {histories.length === 0 ? (
+          <div className="dash-empty">Belum ada data.</div>
+        ) : (
+          <div className="donut-wrap">
+            <div className="donut">
+              <DonutChart totals={nutTotals} />
+              <div className="donut-center">
+                <div className="donut-v">{avgKcalPerMeal}</div>
+                <div className="donut-l">kcal/sesi</div>
+              </div>
             </div>
-            <div className="sch-pct">{s.pct}%</div>
+            <ul className="donut-leg">
+              {DONUT.map((d, i) => (
+                <li key={i}>
+                  <span className="d-nm"><i style={{ background: d.color }}/>{d.label}</span>
+                  <span className="d-val">{d.pct} · {d.val}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
+        )}
       </div>
 
       {/* CONFIDENCE DISTRIBUTION */}
       <div className="card c-conf">
-        <h3>Detection Confidence Distribution <span className="more">All time ▾</span></h3>
-        <div className="sub">Across 128,940 detections — RT-DETR class confidence bands</div>
-        <div className="conf-bar">
-          <i style={{ width:'62%', background:'linear-gradient(135deg,#16a34a,#15803d)' }}>≥95% · 62%</i>
-          <i style={{ width:'24%', background:'linear-gradient(135deg,#84cc16,#65a30d)' }}>90–95% · 24%</i>
-          <i style={{ width:'9%', background:'linear-gradient(135deg,#f59e0b,#d97706)' }}>80–90% · 9%</i>
-          <i style={{ width:'5%', background:'linear-gradient(135deg,#ef4444,#b91c1c)' }}>&lt;80% · 5%</i>
-        </div>
-        <div className="conf-legend">
-          <span className="conf-item"><i style={{ background:'#15803d' }}/>High confidence (auto-approved)</span>
-          <span className="conf-item"><i style={{ background:'#65a30d' }}/>Good</span>
-          <span className="conf-item"><i style={{ background:'#d97706' }}/>Review recommended</span>
-          <span className="conf-item"><i style={{ background:'#b91c1c' }}/>Manual review required</span>
-        </div>
+        <h3>Distribusi Confidence Deteksi <span className="more">Semua waktu ▾</span></h3>
+        <div className="sub">Berdasarkan {allConf.length} deteksi dari {histories.length} sesi — RT-DETR class confidence</div>
+        {allConf.length === 0 ? (
+          <div className="dash-empty">Belum ada data confidence.</div>
+        ) : (
+          <>
+            <div className="conf-bar">
+              {confBands.filter(b => b.pct > 0).map((b, i) => (
+                <i key={i} style={{ width:`${b.pct}%`, background: b.color, minWidth: b.pct > 0 ? 40 : 0 }}>
+                  {b.pct > 5 ? `${b.label} · ${b.pct}%` : ''}
+                </i>
+              ))}
+            </div>
+            <div className="conf-legend">
+              {confBands.map((b, i) => (
+                <span className="conf-item" key={i}><i style={{ background: b.lc }}/>{b.legend} ({b.pct}%)</span>
+              ))}
+            </div>
+          </>
+        )}
       </div>
+
     </div>
   )
 }

@@ -8,6 +8,7 @@ import NutritionData from './pages/NutritionData'
 import DailyMenu from './pages/DailyMenu'
 import Prediction from './pages/Prediction'
 import Reports from './pages/Reports'
+import AKG from './pages/AKG'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="daily-menu" element={<DailyMenu />} />
           <Route path="prediction" element={<Prediction />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="akg" element={<AKG />} />
         </Route>
       </Routes>
     </BrowserRouter>

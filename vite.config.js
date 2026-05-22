@@ -12,8 +12,10 @@ export default defineConfig({
       '/api/classes': { target: 'http://127.0.0.1:5000', changeOrigin: true },
 
       // Node.js Express — database (Prisma + Supabase)
-      '/api/nutrition': { target: 'http://127.0.0.1:3001', changeOrigin: true },
-      '/api/history':   { target: 'http://127.0.0.1:3001', changeOrigin: true },
+      '/api/nutrition':    { target: 'http://127.0.0.1:3001', changeOrigin: true },
+      '/api/history':      { target: 'http://127.0.0.1:3001', changeOrigin: true },
+      '/api/daily-menus':  { target: 'http://127.0.0.1:3001', changeOrigin: true },
+      '/api/akg':          { target: 'http://127.0.0.1:3001', changeOrigin: true },
     },
   },
 })

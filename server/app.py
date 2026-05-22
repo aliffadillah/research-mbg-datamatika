@@ -101,11 +101,11 @@ def call_ultralytics(api_url: str, img_bytes: bytes, filename: str,
         timeout=90,
     )
     if response.status_code == 401:
-        raise RuntimeError(f"Unauthorized ({api_url[:45]}...) — periksa API key di .env")
+        raise RuntimeError("Autentikasi gagal — periksa API key di .env")
     if response.status_code == 429:
         raise RuntimeError("Rate limited. Coba lagi nanti.")
     if response.status_code != 200:
-        raise RuntimeError(f"API error {response.status_code}: {response.text[:300]}")
+        raise RuntimeError(f"API error {response.status_code}: Gagal menghubungi model inference.")
     return response.json()
 
 
@@ -261,8 +261,6 @@ def health():
         "status": "ok",
         "service": "NutriVision MBG — Python Inference Server",
         "pipeline": "2-stage (Omprengan tray crop → Menu detection)",
-        "model_menu":      API_MENU[:60] + "...",
-        "model_omprengan": API_OMPRENGAN[:60] + "...",
         "timestamp": datetime.utcnow().isoformat() + "Z",
     })
 

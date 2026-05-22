@@ -19,8 +19,10 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env'
 const express  = require('express')
 const cors     = require('cors')
 
-const nutritionRouter = require('./routes/nutrition')
-const historyRouter   = require('./routes/history')
+const nutritionRouter  = require('./routes/nutrition')
+const historyRouter    = require('./routes/history')
+const dailyMenusRouter = require('./routes/dailyMenus')
+const akgRouter        = require('./routes/akg')
 
 const app  = express()
 const PORT = process.env.BACKEND_PORT || 3001
@@ -39,8 +41,10 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use('/api/nutrition', nutritionRouter)
-app.use('/api/history',   historyRouter)
+app.use('/api/nutrition',    nutritionRouter)
+app.use('/api/history',      historyRouter)
+app.use('/api/daily-menus',  dailyMenusRouter)
+app.use('/api/akg',          akgRouter)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

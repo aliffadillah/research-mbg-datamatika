@@ -1,4 +1,20 @@
 /* ===== NUTRITION DATA PAGE ===== */
+.nd-error{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:13px;color:#b91c1c}
+.nd-error button{margin-left:auto;font-size:12px;font-weight:600;color:#b91c1c;text-decoration:underline;cursor:pointer}
+.nd-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:60px;color:var(--text-muted);font-size:14px}
+.nd-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px;color:var(--text-faint);font-size:14px;text-align:center}
+.nd-sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.nd-sortable:hover{color:var(--primary)}
+.nd-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.25);z-index:39;backdrop-filter:blur(2px)}
+.nd-search-clear{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text-faint);display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%}
+.nd-search-clear:hover{background:var(--slate-200);color:var(--text)}
+.nd-form-err{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font-size:12px;color:#b91c1c;margin-bottom:12px}
+.chip-sel em{font-style:normal;font-weight:700;color:var(--text-muted);font-size:10px;margin-left:2px}
+.nd-pag a.dis{opacity:0.35;pointer-events:none}
+.spin{animation:nd-spin 0.7s linear infinite}
+@keyframes nd-spin{to{transform:rotate(360deg)}}
+.p-minuman{background:#ede9fe;color:#6d28d9}
+.p-other{background:#f1f5f9;color:#475569}
 .nd-content{padding:24px 28px;display:flex;flex-direction:column;gap:18px}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end}
 .page-head h1{font-size:26px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
